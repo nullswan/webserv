@@ -12,7 +12,7 @@ def run_test():
 	siege = subprocess.Popen(
 		[
 			"siege", "http://127.0.0.1:8080/", 
-			"--concurrent", "255", "--reps", "1", "--benchmark", "--quiet", "--json-output"
+			"--concurrent", "255", "--reps", "1000", "--benchmark", "--quiet", "--json-output"
 		],
 		stdout=subprocess.PIPE)
 	siege.wait()
