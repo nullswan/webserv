@@ -5,13 +5,13 @@ import signal
 import subprocess
 
 def run_test():
-	# Create siege conf
+	# Create siege conf by starting a siege client once.
 	siege_default = subprocess.Popen(["siege"])
 	siege_default.wait()
 
 	siege = subprocess.Popen(
 		[
-			"siege", "http://localhost:8080/", 
+			"siege", "http://127.0.0.1:8080/", 
 			"--concurrent", "255", "--reps", "1", "--benchmark", "--quiet", "--json-output"
 		],
 		stdout=subprocess.PIPE)
