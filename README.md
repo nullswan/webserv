@@ -5,12 +5,14 @@
 [![.github/workflows/unit_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml) <br />
 [![.github/workflows/cpplint.yml](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml) <br />
 [![.github/workflows/docs.yml](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml) <br />
+[![.github/workflows/stress_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml) <br />
 
 ### - [ dev ]
 
 [![.github/workflows/unit_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml) <br />
 [![.github/workflows/cpplint.yml](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml) <br />
 [![.github/workflows/docs.yml](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml) <br />
+[![.github/workflows/stress_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml) <br />
 
 ### - Usefull links
 
