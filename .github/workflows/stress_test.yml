@@ -1,0 +1,21 @@
+name: stress_test
+on: [ push, pull_request ]
+
+jobs:
+  stress_test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt update && sudo apt install build-essential clang -y
+      - run: | 
+          wget http://download.joedog.org/siege/siege-4.1.1.tar.gz
+          mv siege-4.1.1.tar.gz /opt/
+          cd /opt/
+          tar -zxf siege-4.1.1.tar.gz
+          cd siege-4.1.1
+          ./configure
+          sudo make
+          sudo make install
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: make
+      - run: python3 tests/stress_test.py
