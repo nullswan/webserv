@@ -52,7 +52,7 @@ run		: all
 	@ ./webserv
 
 .PHONY	: tests
-tests	: lint re
+tests	: re
 	@	printf "Tests not implemented\n"
 # @	./webserv
 
@@ -70,3 +70,6 @@ nginx	:
 	@	printf "Starting nginx instance on port 9090\n"
 	docker run --name webserv_nginx -p 9090:9090 -d nginx
 	@ touch .nginx
+
+.PHONY	: push
+push	: lint tests
