@@ -27,7 +27,7 @@ class IBlock {
 	int _redirection_code;
 
 	size_t _body_limit;
-	bool _methods_allowed[TOTAL_METHODS];
+	bool _methods_allowed[METHODS_TOTAL];
 	bool _autoindex;  // ToDo: Verify default value
 
 	std::map<std::string, std::string> _cgi;
@@ -35,7 +35,7 @@ class IBlock {
  public:
 	IBlock()
 	: _root(""), _have_redirection(false), _redirection(""), _body_limit(1000000) {
-		for (int i = 0; i < TOTAL_METHODS; i++) {
+		for (int i = 0; i < METHODS_TOTAL; i++) {
 			_methods_allowed[i] = true;
 		}
 	}

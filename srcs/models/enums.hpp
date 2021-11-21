@@ -8,7 +8,8 @@ enum EMethods : int {
 	GET = 0,
 	POST,
 	DELETE,
-	TOTAL_METHODS
+	METHODS_TOTAL,
+	METHOD_UNKNOWN
 };
 
 enum ERead : int {
