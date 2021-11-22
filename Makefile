@@ -26,7 +26,11 @@ $(NAME)	: $(OBJS)
 $(OBJS_DIR)%.o : $(SRCS_DIR)%.cpp
 	@	mkdir -p $(dir $@)
 	@	printf "Compiling: $<"
+ifneq ($(MODE), benchmark)
 	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+else
+	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS) -D WEBSERV_BENCHMARK=1
+endif
 	@	printf " -> OK\n"
 
 .PHONY	: clean

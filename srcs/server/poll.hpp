@@ -59,10 +59,9 @@ class Poll {
 
 	int	run() {
 		struct epoll_event events[MAX_CONNS];
+		int	nfds, i;
 
 		std::cout << "Up and awaiting..." << std::endl;
-
-		int	nfds, i;
 		while (_alive) {
 			nfds = epoll_wait(epoll_fd, events, MAX_CONNS, -1);
 			for (i = 0; i < nfds; i++) {
@@ -188,8 +187,7 @@ class Poll {
 			return;
 		}
 
-		client->send_response();
-		if (client->do_close())
+		if (client->send_response())
 			return _delete_client(ev_fd, client);
 		return _change_epoll_state(ev_fd, EPOLLIN);
 	}
