@@ -22,7 +22,6 @@ class Client {
 	socklen_t _addr_len;
 
 	int		_fd;
-	bool	_close;
 
 	Request	*_last_request;
 
@@ -31,7 +30,7 @@ class Client {
 		Always close client for the moment.
 	*/
 	explicit Client(int ev_fd)
-		: _addr(), _addr_len(0), _fd(-1), _close(true), _last_request(0) {
+		: _addr(), _addr_len(0), _fd(-1), _last_request(0) {
 		_fd = accept(ev_fd, &_addr, &_addr_len);
 		if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1) {
 			close(_fd);
@@ -60,21 +59,28 @@ class Client {
 		}
 	}
 
-	void	send_response() {
+	bool	send_response() {
 		std::string head = "HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/html\r\n"
 		"Content-length: 12\r\n\r\nHello World!";
 
 		send(_fd, head.c_str(), head.size(), 0);
 
-		if (_last_request) {
-			delete _last_request;
-			_last_request = 0;
-		}
+		return _close();
 	}
 
 	int	get_fd() const { return _fd; }
-	bool do_close() const { return _close; }
+
+ private:
+	bool	_close() {
+		if (_last_request) {
+			bool state = _last_request->closed();
+			delete _last_request;
+			_last_request = 0;
+			return state;
+		}
+		return true;
+	}
 };
 }  // namespace Http
 }  // namespace Webserv

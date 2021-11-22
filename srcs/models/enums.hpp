@@ -1,6 +1,8 @@
 #ifndef MODELS_ENUMS_HPP_
 #define MODELS_ENUMS_HPP_
 
+#include <string>
+
 namespace Webserv {
 namespace Models {
 

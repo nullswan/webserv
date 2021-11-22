@@ -188,8 +188,7 @@ class Poll {
 			return;
 		}
 
-		client->send_response();
-		if (client->do_close())
+		if (client->send_response())
 			return _delete_client(ev_fd, client);
 		return _change_epoll_state(ev_fd, EPOLLIN);
 	}
