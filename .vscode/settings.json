@@ -63,7 +63,10 @@
 		"streambuf": "cpp",
 		"typeinfo": "cpp",
 		"map": "cpp",
-		"set": "cpp"
+		"set": "cpp",
+		"compare": "cpp",
+		"concepts": "cpp",
+		"ranges": "cpp"
 	}
 }
 

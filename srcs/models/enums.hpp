@@ -18,6 +18,30 @@ enum ERead : int {
 	READ_ERROR
 };
 
+EMethods	get_method(const std::string& method) {
+	if (method == "GET")
+		return GET;
+	else if (method == "POST")
+		return POST;
+	else if (method == "DELETE")
+		return DELETE;
+	else
+		return METHOD_UNKNOWN;
+}
+
+std::string	resolve_method(EMethods method) {
+	switch (method) {
+		case GET:
+			return "GET";
+		case POST:
+			return "POST";
+		case DELETE:
+			return "DELETE";
+		default:
+			return "UNKNOWN";
+	}
+}
+
 }  // namespace Models
 }  // namespace Webserv
 
