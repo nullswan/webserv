@@ -41,12 +41,18 @@ class Client {
 			_fd = -1;
 			std::cerr << "fcntl() failed" << std::endl;
 		}
-		_resolve_client_ip();
+		#ifndef WEBSERV_BENCHMARK
+			_resolve_client_ip();
+		#endif
 	}
 
 	~Client() {
 		if (_fd != -1)
 			close(_fd);
+		if (_last_request)
+			delete _last_request;
+		if (_last_response)
+			delete _last_response;
 	}
 
 	ERead read_request() {
@@ -77,10 +83,6 @@ class Client {
 
  private:
 	bool	_close() {
-		if (_last_response) {
-			delete _last_response;
-			_last_response = 0;
-		}
 		if (_last_request) {
 			bool state = _last_request->closed();
 			#ifndef WEBSERV_BENCHMARK
@@ -102,17 +104,17 @@ class Client {
 		char buffer[50];
 
 		strftime(buffer, 50, "%Y/%m/%d - %H:%M:%S", tm);
-		std::cout << "[WEBSERV] " << buffer << " | " 
-		<< get_http_code() << " | " 
+		std::cout << "[WEBSERV] " << buffer << " |"
+		<< get_http_code() << "| "
 		<< get_time_diff(&_end) << " | "
 		<< get_client_ip() << " | "
-		<< get_method() << " " 
+		<< get_method() << " "
 		<< get_uri() << std::endl;
 	}
 
 	void	_resolve_client_ip() {
 		getpeername(_fd, (struct sockaddr *)&_addr, &_addr_len);
-		_ip = inet_ntoa(_addr.sin_addr); 
+		_ip = inet_ntoa(_addr.sin_addr);
 		_ip.insert(0, 10 - _ip.size(), ' ');
 	}
 
@@ -122,7 +124,7 @@ class Client {
 
 	std::string	get_http_code() const {
 		if (_last_response)
-			return _last_response->get_http_code();
+			return Models::resolve_decorated_http_code(_last_response->get_http_code());
 		return "?";
 	}
 
@@ -155,7 +157,7 @@ class Client {
 			ss << sec << " s";
 		else
 			ss << usec << " μs";
-		
+
 		std::string str = ss.str();
 		return str.insert(0, 10 - str.size(), ' ');
 	}

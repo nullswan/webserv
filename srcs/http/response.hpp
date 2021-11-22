@@ -20,7 +20,7 @@ class Response {
 		"Content-length: 12\r\n\r\n";
 
 		_body = "Hello World!";
-	};
+	}
 
 	size_t size() const { return _payload.size(); }
 	bool	prepare() {
@@ -32,7 +32,7 @@ class Response {
 	}
 
 	std::string	get_http_code() {
-		return "404";
+		return "200";
 	}
 };
 }  // namespace Http
