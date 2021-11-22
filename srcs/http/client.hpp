@@ -102,7 +102,7 @@ class Client {
 		time_t time = (time_t)_end.tv_sec;
 		struct tm local_time;
 		localtime_r(&time, &local_time);
-		char buffer[50];
+		char buffer[25];
 
 		strftime(buffer, 25, "%Y/%m/%d - %H:%M:%S", &local_time);
 		std::cout << "[WEBSERV] " << buffer << " |"
