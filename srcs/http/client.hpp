@@ -100,10 +100,11 @@ class Client {
 		gettimeofday(&_end, NULL);
 
 		time_t time = (time_t)_end.tv_sec;
-		struct tm *tm = localtime(&time);
+		struct tm local_time;
+		localtime_r(&time, &local_time);
 		char buffer[50];
 
-		strftime(buffer, 50, "%Y/%m/%d - %H:%M:%S", tm);
+		strftime(buffer, 25, "%Y/%m/%d - %H:%M:%S", &local_time);
 		std::cout << "[WEBSERV] " << buffer << " |"
 		<< get_http_code() << "| "
 		<< get_time_diff(&_end) << " | "
