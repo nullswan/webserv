@@ -15,7 +15,9 @@ class Request {
 	typedef Webserv::Models::EMethods		EMethod;
 
  private:
-	EMethod	_method;
+	struct timeval _time;
+
+	EMethod		_method;
 	std::string	_uri;
 	std::string _http_version;
 
@@ -25,9 +27,8 @@ class Request {
  public:
 	explicit Request(char *buffer) : _method(Models::METHOD_UNKNOWN), _uri(""),
 		_http_version(""), _headers(), _closed(false) {
+		gettimeofday(&_time, NULL);
 		_parse(buffer);
-
-		// __repr__();
 	}
 
 	bool	bad_request() {
@@ -54,6 +55,10 @@ class Request {
 			std::cout << "{" << it->first << ": " << it->second << "}" << std::endl;
 		}
 	}
+
+	std::string get_uri() const { return _uri; }
+	EMethod		get_method() const { return _method; }
+	const struct timeval *get_time() const { return &_time; }
 
  private:
 	void	_parse(std::string buffer) {
