@@ -14,7 +14,7 @@ int	main(int ac, char **av) {
 	} catch (std::exception &e) {
 		parser.clear();
 
-		std::cerr << "fatal:" << e.what() << std::endl;
+		std::cerr << "fatal: " << e.what() << std::endl;
 		return (1);
 	}
 }

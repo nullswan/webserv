@@ -116,7 +116,7 @@ class Client {
 	void	_resolve_client_ip() {
 		getpeername(_fd, (struct sockaddr *)&_addr, &_addr_len);
 		_ip = inet_ntoa(_addr.sin_addr);
-		_ip.insert(0, 10 - _ip.size(), ' ');
+		_ip.insert(0, INET_ADDRSTRLEN + 2 - _ip.size(), ' ');
 	}
 
 	std::string	get_client_ip() const {
@@ -154,10 +154,14 @@ class Client {
 		size_t sec = ptr->tv_sec - get_time()->tv_sec;
 		std::stringstream ss;
 
-		if (sec > 0)
+		if (sec > 0) {
 			ss << sec << " s";
-		else
-			ss << usec << " μs";
+		} else {
+			if (usec >= 1000)
+				ss << usec / 1000 << " ms";
+			else
+				ss << usec << " us";
+		}
 
 		std::string str = ss.str();
 		return str.insert(0, 10 - str.size(), ' ');
