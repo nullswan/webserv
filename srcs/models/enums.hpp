@@ -34,17 +34,17 @@ EMethods	get_method(const std::string& method) {
 std::string	resolve_decorated_http_code(const std::string &status_code) {
 	switch (const status_code[0]) {
 		case '1':
-			return "Information";
+			return "\033[0;41;37m" + status_code + "\033[0m";
 		case '2':
-			return "Success";
+			return "\033[0;42;37m" + status_code + "\033[0m";
 		case '3':
-			return "Redirection";
+			return "\033[0;47m" + status_code + "\033[0m";
 		case '4':
-			return "Client Error";
+			return "\033[0;43m" + status_code + "\033[0m";
 		case '5':
-			return "Server Error";
+			return "\033[0;41;37m" + status_code + "\033[0m";
 		default:
-			return "Unknown";
+			return "0";
 	}
 }
 
