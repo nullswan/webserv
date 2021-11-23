@@ -61,9 +61,9 @@ class Poll {
 		struct epoll_event events[MAX_CONNS];
 		int	nfds, i;
 
-		std::cout << "Up and awaiting..." << std::endl;
+		std::cout << "Healthy and awaiting..." << std::endl;
 		while (_alive) {
-			nfds = epoll_wait(epoll_fd, events, MAX_CONNS, -1);
+			nfds = epoll_wait(epoll_fd, events, MAX_CONNS, 1000);
 			for (i = 0; i < nfds; i++) {
 				int ev_fd = events[i].data.fd;
 				if (ev_fd == STDIN_FILENO) {
@@ -74,14 +74,19 @@ class Poll {
 					close(ev_fd);
 					continue;
 				}
-				if (_instances.find(ev_fd) != _instances.end()) {
-					_handle_connection(ev_fd);
-				} else if (events[i].events & EPOLLIN) {
-					_handle_read(ev_fd);
+				if (events[i].events & EPOLLIN) {
+					std::map<int, Instance *>::iterator it = _instances.find(ev_fd);
+					if (it != _instances.end()) {
+						_handle_connection(it->second, ev_fd);
+					} else {
+						_handle_read(ev_fd);
+					}
 				} else if (events[i].events & EPOLLOUT) {
 					_handle_write(ev_fd);
 				}
 			}
+			if (nfds == 0)
+				_handle_expired_clients();
 		}
 
 		return 0;
@@ -143,8 +148,8 @@ class Poll {
 		return true;
 	}
 
-	void	_handle_connection(int fd) {
-		Client *client = new Client(fd);
+	void	_handle_connection(IServer *master, int fd) {
+		Client *client = new Client(master, fd);
 		if (!client) {
 			std::cerr << "handle_connection: alloc failed" << std::endl;
 			return;
@@ -198,6 +203,18 @@ class Poll {
 		if (line == "quit" || line == "exit") {
 			_alive = false;
 			std::cout << "Shutting down Webserv gracefully..." << std::endl;
+		}
+	}
+	void	_handle_expired_clients() {
+		struct timeval now;
+		gettimeofday(&now, NULL);
+
+		std::map<int, Client *>::iterator it = _clients.begin();
+		for (; it != _clients.end(); it++) {
+			if (it->second->is_expired(now.tv_sec)) {
+				_delete_client(it->first, it->second);
+				return _handle_expired_clients();
+			}
 		}
 	}
 

@@ -21,7 +21,7 @@
 
 namespace Webserv {
 namespace Server {
-class Instance : protected Webserv::Models::IServer {
+class Instance : public Webserv::Models::IServer {
  public:
 	typedef Webserv::Models::IServer IServer;
 	typedef Webserv::Models::ILocation ILocation;
@@ -78,6 +78,7 @@ class Instance : protected Webserv::Models::IServer {
 	void	_listen_socket() {
 		if (listen(_fd, MAX_CONNS) == -1)
 			throw std::runtime_error("listen() failed");
+		std::cout << _name << " bound on " << _host << ":" << _port << std::endl;
 	}
 };
 }  // namespace Server

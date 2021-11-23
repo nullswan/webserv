@@ -32,7 +32,7 @@ class Response {
 	}
 
 	std::string	get_http_code() {
-		return "200";
+		return "404";
 	}
 };
 }  // namespace Http

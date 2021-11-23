@@ -38,9 +38,9 @@ std::string	resolve_decorated_http_code(const std::string &status_code) {
 		case '2':
 			return "\033[0;42;37m " + status_code + " \033[0m";
 		case '3':
-			return "\033[0;47m " + status_code + " \033[0m";
+			return "\033[0;47;37m " + status_code + " \033[0m";
 		case '4':
-			return "\033[0;43m " + status_code + " \033[0m";
+			return "\033[0;43;37m " + status_code + " \033[0m";
 		case '5':
 			return "\033[0;41;37m " + status_code + " \033[0m";
 		default:

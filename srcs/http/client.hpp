@@ -14,6 +14,7 @@
 
 #include "request.hpp"
 #include "response.hpp"
+#include "../models/IServer.hpp"
 #include "../models/enums.hpp"
 #include "../models/consts.hpp"
 
@@ -22,25 +23,32 @@ namespace Http {
 class Client {
 	typedef Webserv::Models::ERead	ERead;
 	typedef Webserv::Http::Request	Request;
+	typedef Webserv::Models::IServer	IServer;
 
  private:
-	struct sockaddr_in _addr;
-	socklen_t _addr_len;
-	std::string _ip;
-	int		_fd;
+	IServer	*_master;
+
+	struct sockaddr_in	_addr;
+	socklen_t 			_addr_len;
+
+	std::string 	_ip;
+	int				_fd;
+	struct timeval 	_last_ping;
 
 	Request		*_last_request;
 	Response	*_last_response;
 
  public:
-	explicit Client(int ev_fd) : _addr(), _addr_len(0), _fd(-1)
-		, _last_request(0), _last_response(0) {
+	Client(IServer *master, int ev_fd)
+		: _master(master), _addr(), _addr_len(0), _fd(-1) ,
+		_last_request(0), _last_response(0) {
 		_fd = accept(ev_fd, (struct sockaddr *)&_addr, &_addr_len);
 		if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1) {
 			close(_fd);
 			_fd = -1;
 			std::cerr << "fcntl() failed" << std::endl;
 		}
+		gettimeofday(&_last_ping, NULL);
 		#ifndef WEBSERV_BENCHMARK
 			_resolve_client_ip();
 		#endif
@@ -66,6 +74,7 @@ class Client {
 			if (_last_request)
 				delete _last_request;
 			_last_request = new Request(buffer);
+			_last_ping = *(_last_request->get_time());
 			return Models::READ_OK;
 		}
 	}
@@ -80,6 +89,9 @@ class Client {
 	}
 
 	int	get_fd() const { return _fd; }
+	bool	is_expired(time_t now) const {
+		return (now - _last_ping.tv_sec) > TIMEOUT;
+	}
 
  private:
 	bool	_close() {
@@ -105,22 +117,24 @@ class Client {
 		char buffer[25];
 
 		strftime(buffer, 25, "%Y/%m/%d - %H:%M:%S", &local_time);
-		std::cout << "[WEBSERV] " << buffer << " |"
+		std::cout << "[\033[1;36mWEBSERV\033[0m] " << buffer << " |"
+		<< get_method() << " " << get_uri() << " |"
 		<< get_http_code() << "| "
 		<< get_time_diff(&_end) << " | "
-		<< get_client_ip() << " | "
-		<< get_method() << " "
-		<< get_uri() << std::endl;
+		<< get_client_ip() << " -> " << get_master_ip() << std::endl;
 	}
 
 	void	_resolve_client_ip() {
 		getpeername(_fd, (struct sockaddr *)&_addr, &_addr_len);
 		_ip = inet_ntoa(_addr.sin_addr);
-		_ip.insert(0, INET_ADDRSTRLEN + 2 - _ip.size(), ' ');
 	}
 
 	std::string	get_client_ip() const {
 		return _ip;
+	}
+
+	std::string get_master_ip() const {
+		return _master->get_ip();
 	}
 
 	std::string	get_http_code() const {
@@ -160,11 +174,11 @@ class Client {
 			if (usec >= 1000)
 				ss << usec / 1000 << " ms";
 			else
-				ss << usec << " us";
+				ss << usec << " μs";
 		}
 
 		std::string str = ss.str();
-		return str.insert(0, 10 - str.size(), ' ');
+		return str.insert(0, 9 - str.size(), ' ');
 	}
 };
 }  // namespace Http
