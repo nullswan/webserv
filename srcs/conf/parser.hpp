@@ -34,6 +34,8 @@ class Parser {
 			Inject a default server
 		*/
 		_servers.push_back(new IServer("local-net", "0.0.0.0", 8080));
+		_servers.push_back(new IServer("local-net", "0.0.0.0", 8081));
+		_servers.push_back(new IServer("local-net", "0.0.0.0", 8082));
 	}
 	~Parser() {
 		clear();

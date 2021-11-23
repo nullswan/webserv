@@ -12,7 +12,7 @@
 #include <csignal>
 #include <iostream>
 
-#define MAX_EV 8192
+#define MAX_EV 4196
 
 bool	_alive = true;
 
@@ -45,6 +45,11 @@ int main(void) {
 	setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &_true, sizeof(_true));
 
     
+	struct sockaddr_in addr = {0};
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(8080);
+	addr.sin_addr.s_addr = htonl(INADDR_ANY);
+
 	bind(server_fd, (struct sockaddr *)&addr, sizeof(addr));
 	listen(server_fd, MAX_EV);
 	int epfd = epoll_create1(0);
@@ -85,7 +90,8 @@ int main(void) {
 				send(events[i].data.fd, head, strlen(head), 0);
 				event.events = EPOLLIN;
 				event.data.fd = events[i].data.fd;
-				// close(events[i].data.fd);
+				// if not keep-alive
+				close(events[i].data.fd);
 				epoll_ctl(epfd, EPOLL_CTL_MOD, events[i].data.fd, &event);
 			}
 		}
