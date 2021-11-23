@@ -33,32 +33,31 @@ class IServer : protected Webserv::Models::IBlock {
 
  public:
 	IServer(const std::string &name, const std::string &host, const int port)
-		: _name(name), _host(host), _port(port) {}
+		: _name(name), _host(host),  _port(port) {}
 	IServer(const IServer &lhs)
-		: _name(lhs._name), _host(lhs._host), _port(lhs._port) {
-		_indexs = lhs._indexs;
-		_locations = lhs._locations;
-		_error_pages = lhs._error_pages;
-	}
+		: _name(lhs._name), _host(lhs._host), _port(lhs._port),
+		  _indexs(lhs._indexs), _locations(lhs._locations),
+		  _error_pages(lhs._error_pages) {}
 	~IServer() {}
 
-	const std::string &getName() const { return _name; }
-	const std::string &getHost() const { return _host; }
-	int getPort() const { return _port; }
+	const std::string &get_name() const { return _name; }
+	const std::string &get_host() const { return _host; }
+	const std::string &get_ip() const { return _host; }
+	int get_port() const { return _port; }
 
-	const std::vector<std::string> &getIndexs() const { return _indexs; }
-	const std::map<std::string, ILocation *> &getLocations() const {
+	const std::vector<std::string> &get_indexs() const { return _indexs; }
+	const std::map<std::string, ILocation *> &get_locations() const {
 		return _locations;
 	}
-	const std::map<int, std::string> &getErrorPages() const {
+	const std::map<int, std::string> &get_error_pages() const {
 		return _error_pages;
 	}
 
-	void	addIndex(const std::string &index) { _indexs.push_back(index); }
-	void	addLocation(const std::string &key, ILocation *location) {
+	void	add_index(const std::string &index) { _indexs.push_back(index); }
+	void	add_location(const std::string &key, ILocation *location) {
 		_locations.insert(std::pair<std::string, ILocation *>(key, location));
 	}
-	void	addErrorPage(int code, const std::string &path) {
+	void	add_error_page(int code, const std::string &path) {
 		_error_pages.insert(std::pair<int, std::string>(code, path));
 	}
 };
