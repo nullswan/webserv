@@ -38,10 +38,16 @@ class Request {
 		return false;
 	}
 
-	bool	closed() const {
-		if (!_closed && _headers.find("Connection") != _headers.end()) {
-			if (_headers.find("Connection")->second == "close")
-				return true;
+	bool	closed() {
+		if (!_closed) {
+			std::map<std::string, std::string>::const_iterator
+				it = _headers.find("Connection");
+			if (it != _headers.end()) {
+				if (it->second == "close") {
+					_closed = true;
+					return true;
+				}
+			}
 		}
 		return _closed;
 	}

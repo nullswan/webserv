@@ -1,10 +1,10 @@
 NAME	:= webserv
 CC		:= clang++
 
-CFLAGS	:= -Wall -Wextra -Werror -std=c++98 -g3
+CFLAGS	:= -Wall -Wextra -Werror -std=c++98
+OFLAGS  := -O3 -D WEBSERV_BENCHMARK=1
 DFLAGS	= -MMD -MF $(@:.o=.d)
 # DEBUGFLAGS = -pedantic -Wunreachable-code -Wunused
-# STRESSFLAGS = -O3
 
 FILES	= main.cpp
 
@@ -21,15 +21,19 @@ all		: $(NAME)
 -include $(DEPS)
 $(NAME)	: $(OBJS)
 	@	printf "Compiling $(NAME)\n"
-	@	$(CC) $(CFLAGS) $^ -o $@
+ifneq ($(MODE), benchmark)
+	@	$(CC) $(CFLAGS) $^ -o $@ -g3
+else
+	@	$(CC) $(CFLAGS) $^ -o $@ $(OFLAGS)
+endif
 
 $(OBJS_DIR)%.o : $(SRCS_DIR)%.cpp
 	@	mkdir -p $(dir $@)
 	@	printf "Compiling: $<"
 ifneq ($(MODE), benchmark)
-	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS)
+	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS) -g3
 else
-	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS) -D WEBSERV_BENCHMARK=1
+	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS) $(OFLAGS)
 endif
 	@	printf " -> OK\n"
 
