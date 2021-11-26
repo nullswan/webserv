@@ -22,14 +22,22 @@ class Request {
 	std::string _http_version;
 
 	std::map<std::string, std::string>	_headers;
+	bool								_headers_done;
 
 	bool	_closed;
 
  public:
 	explicit Request(char *buffer) : _method(Models::METHOD_UNKNOWN), _uri(""),
-		_http_version(""), _headers(), _closed(false) {
+		_http_version(""), _headers(), _headers_done(false), _closed(false) {
 		gettimeofday(&_time, NULL);
 		_parse(buffer);
+	}
+
+	void	parse_content(std::string buffer) {
+		if (_headers_done == false)
+			_extract_headers(&buffer);
+		else
+			_extract_body(&buffer);
 	}
 
 	bool	bad_request() {
@@ -54,8 +62,8 @@ class Request {
 
 	void	__repr__() {
 		std::cout << "Request{method: " << Models::resolve_method(_method)
-			<< ", _uri: " << _uri
-			<< ", _http_version: " << _http_version << "}" << std::endl;
+			<< ", uri: " << _uri
+			<< ", http_version: " << _http_version << "}" << std::endl;
 
 		std::map<std::string, std::string>::iterator it;
 		for (it = _headers.begin(); it != _headers.end(); it++) {
@@ -63,9 +71,22 @@ class Request {
 		}
 	}
 
-	std::string get_uri() const { return _uri; }
 	EMethod		get_method() const { return _method; }
+	std::string get_uri() const { return _uri; }
+	std::string get_header_value(const std::string &headerName) const {
+		std::map<std::string, std::string>::const_iterator it;
+		it = _headers.find(headerName);
+		if (it == _headers.end()) {
+			return "";
+		}
+		else {
+			return it->second;
+		}
+	}
+	bool		get_headers_status() { return _headers_done; }
 	const struct timeval *get_time() const { return &_time; }
+
+	void		set_headers_status(bool status) { _headers_done = status; }
 
  private:
 	void	_parse(std::string buffer) {
@@ -75,7 +96,6 @@ class Request {
 			return;
 		if (!_extract_http_version(&buffer))
 			return;
-		_extract_headers(&buffer);
 	}
 
 	bool	_extract_method(std::string *buffer) {
@@ -123,6 +143,10 @@ class Request {
 			buffer->erase(0, header_separator_pos + 2);
 			header_separator_pos = buffer->find("\r\n");
 		}
+	}
+
+	void	_extract_body(__attribute__((unused)) std::string *buffer) {
+
 	}
 };
 }  // namespace Http
