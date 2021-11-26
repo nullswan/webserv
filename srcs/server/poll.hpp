@@ -198,9 +198,8 @@ class Poll {
 	}
 	void	_handle_stdin() {
 		std::string line;
-		std::getline(std::cin, line);
 
-		if (line == "quit" || line == "exit") {
+		if (!std::getline(std::cin, line) || line == "quit" || line == "exit") {
 			_alive = false;
 			std::cout << "Shutting down Webserv gracefully..." << std::endl;
 		}
