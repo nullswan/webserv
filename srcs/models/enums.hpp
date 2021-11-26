@@ -6,7 +6,7 @@
 namespace Webserv {
 namespace Models {
 
-enum EMethods : int {
+enum EMethods {
 	GET = 0,
 	POST,
 	DELETE,
@@ -14,7 +14,7 @@ enum EMethods : int {
 	METHOD_UNKNOWN
 };
 
-enum ERead : int {
+enum ERead {
 	READ_OK = 0,
 	READ_EOF,
 	READ_ERROR
