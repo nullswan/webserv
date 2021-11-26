@@ -21,6 +21,7 @@
 namespace Webserv {
 namespace Http {
 class Client {
+	typedef Webserv::Models::EMethods	EMethods;
 	typedef Webserv::Models::ERead	ERead;
 	typedef Webserv::Http::Request	Request;
 	typedef Webserv::Models::IServer	IServer;
@@ -64,18 +65,21 @@ class Client {
 	}
 
 	ERead read_request() {
-		char buffer[REQ_BUF_SIZE];
+		char buffer[REQ_BUF_SIZE + 1] = {0};
 		int n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
 		if (n == -1) {
 			return Models::READ_ERROR;
 		} else if (n == 0) {
 			return Models::READ_EOF;
 		} else {
-			if (_last_request)
-				delete _last_request;
-			_last_request = new Request(buffer);
-			_last_ping = *(_last_request->get_time());
-			return Models::READ_OK;
+			if (_last_request == NULL) {
+				_last_request = new Request(buffer);
+				_last_ping = *(_last_request->get_time());
+			}
+			else {
+				_last_request->parse_content(buffer);
+			}
+			return _request_status(buffer);
 		}
 	}
 
@@ -94,6 +98,32 @@ class Client {
 	}
 
  private:
+	ERead	_request_status(std::string buffer) {
+		if (
+			_last_request->get_header_value("Content-Type") == "application/x-www-form-urlencoded"
+			&& _last_request->get_headers_status() == true
+		) {
+			return Models::READ_OK;
+		}
+		else if (buffer != "\r\n") {
+			return Models::READ_WAIT;
+		}
+		else {
+			if (_last_request->get_method() == Models::POST) {
+				if (_last_request->get_headers_status() == false) {
+					_last_request->set_headers_status(true);
+					return Models::READ_WAIT;
+				}
+				else {
+					return Models::READ_OK;
+				}
+			}
+			else {
+				return Models::READ_OK;
+			}
+		}
+	}
+
 	bool	_close() {
 		if (_last_request) {
 			bool state = _last_request->closed();
@@ -101,7 +131,7 @@ class Client {
 				__log();
 			#endif
 			delete _last_request;
-			_last_request = 0;
+			_last_request = NULL;
 			return state;
 		}
 		return true;
