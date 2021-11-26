@@ -77,9 +77,9 @@ class Client {
 				_last_ping = *(_last_request->get_time());
 			}
 			else {
-				_last_request->parse_content(buffer);
+				_last_request->init(buffer);
 			}
-			return _request_status(buffer);
+			return _request_status();
 		}
 	}
 
@@ -98,29 +98,14 @@ class Client {
 	}
 
  private:
-	ERead	_request_status(std::string buffer) {
-		if (
-			_last_request->get_header_value("Content-Type") == "application/x-www-form-urlencoded"
-			&& _last_request->get_headers_status() == true
-		) {
-			return Models::READ_OK;
-		}
-		else if (buffer != "\r\n") {
+	ERead	_request_status() {
+		const std::string request = _last_request->get_raw_request();
+		if (request.find("\r\n\r\n") == std::string::npos) {
 			return Models::READ_WAIT;
 		}
 		else {
-			if (_last_request->get_method() == Models::POST) {
-				if (_last_request->get_headers_status() == false) {
-					_last_request->set_headers_status(true);
-					return Models::READ_WAIT;
-				}
-				else {
-					return Models::READ_OK;
-				}
-			}
-			else {
-				return Models::READ_OK;
-			}
+			_last_request->parse();
+			return Models::READ_OK;
 		}
 	}
 

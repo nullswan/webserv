@@ -12,32 +12,43 @@
 namespace Webserv {
 namespace Http {
 class Request {
-	typedef Webserv::Models::EMethods		EMethod;
+	typedef std::map<std::string, std::string>::const_iterator	const_iterator;
+	typedef Webserv::Models::EMethods							EMethod;
 
  private:
 	struct timeval _time;
+
+	std::string	_raw_request;
 
 	EMethod		_method;
 	std::string	_uri;
 	std::string _http_version;
 
 	std::map<std::string, std::string>	_headers;
-	bool								_headers_done;
+	std::map<std::string, std::string>	_body;
 
 	bool	_closed;
 
  public:
-	explicit Request(char *buffer) : _method(Models::METHOD_UNKNOWN), _uri(""),
-		_http_version(""), _headers(), _headers_done(false), _closed(false) {
+	explicit Request(std::string buffer) : _raw_request(buffer),
+		_method(Models::METHOD_UNKNOWN), _uri(""), _http_version(""),
+		_headers(), _closed(false) {
 		gettimeofday(&_time, NULL);
-		_parse(buffer);
 	}
 
-	void	parse_content(std::string buffer) {
-		if (_headers_done == false)
-			_extract_headers(&buffer);
-		else
-			_extract_body(&buffer);
+	void	init(std::string buffer) { _raw_request += buffer; }
+
+	void	parse() {
+		if (!_extract_method(&_raw_request))
+			return;
+		if (!_extract_uri(&_raw_request))
+			return;
+		if (!_extract_http_version(&_raw_request))
+			return;
+		_extract_headers(&_raw_request);
+		if (_method == Models::POST)
+			_extract_body(&_raw_request);
+		__repr__();
 	}
 
 	bool	bad_request() {
@@ -48,8 +59,7 @@ class Request {
 
 	bool	closed() {
 		if (!_closed) {
-			std::map<std::string, std::string>::const_iterator
-				it = _headers.find("Connection");
+			const_iterator it = _headers.find("Connection");
 			if (it != _headers.end()) {
 				if (it->second == "close") {
 					_closed = true;
@@ -69,13 +79,18 @@ class Request {
 		for (it = _headers.begin(); it != _headers.end(); it++) {
 			std::cout << "{" << it->first << ": " << it->second << "}" << std::endl;
 		}
+
+		std::map<std::string, std::string>::iterator it2;
+		for (it2 = _body.begin(); it2 != _body.end(); it2++) {
+			std::cout << "{" << it2->first << ": " << it2->second << "}" << std::endl;
+		}
 	}
 
+	std::string get_raw_request() const { return _raw_request; };
 	EMethod		get_method() const { return _method; }
 	std::string get_uri() const { return _uri; }
 	std::string get_header_value(const std::string &headerName) const {
-		std::map<std::string, std::string>::const_iterator it;
-		it = _headers.find(headerName);
+		const_iterator it = _headers.find(headerName);
 		if (it == _headers.end()) {
 			return "";
 		}
@@ -83,21 +98,9 @@ class Request {
 			return it->second;
 		}
 	}
-	bool		get_headers_status() { return _headers_done; }
 	const struct timeval *get_time() const { return &_time; }
 
-	void		set_headers_status(bool status) { _headers_done = status; }
-
  private:
-	void	_parse(std::string buffer) {
-		if (!_extract_method(&buffer))
-			return;
-		if (!_extract_uri(&buffer))
-			return;
-		if (!_extract_http_version(&buffer))
-			return;
-	}
-
 	bool	_extract_method(std::string *buffer) {
 		size_t	method_separator_pos = buffer->find(" ");
 		if (method_separator_pos == std::string::npos)
@@ -145,8 +148,35 @@ class Request {
 		}
 	}
 
-	void	_extract_body(__attribute__((unused)) std::string *buffer) {
-
+	void	_extract_body(std::string *buffer) {
+		const_iterator form_type = _headers.find("Content-Type");
+		if (form_type != _headers.end()) {
+			if (form_type->second == "application/x-www-form-urlencoded") {
+				*buffer = buffer->substr(2);
+				const_iterator content_length = _headers.find("Content-Length");
+				if (content_length == _headers.end()) {
+					return ;	// Invalid x-www-form-urlencoded request: missing content length.
+				}
+				if (buffer->size() != static_cast<size_t>(atoi(content_length->second.c_str()))) {
+					return ;	// Invalid x-www-form-urlencoded request: mismatching content length.
+				}
+				size_t body_separator_pos;
+				do {
+					body_separator_pos = buffer->find("&");
+					const std::string body_entry = buffer->substr(0, body_separator_pos);
+					const size_t body_entry_separator_pos = body_entry.find("=");
+					if (body_entry_separator_pos == std::string::npos) {
+						break ;
+					}
+					const std::string body_field = body_entry.substr(0, body_entry_separator_pos);
+					const std::string body_value = body_entry.substr(body_entry_separator_pos + 1);
+					_body[body_field] = body_value;
+					buffer->erase(0, body_separator_pos + 1);
+				} while (body_separator_pos != std::string::npos);
+			}
+			else if (form_type->second == "multipart/form-data") {
+			}
+		}
 	}
 };
 }  // namespace Http
