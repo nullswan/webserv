@@ -17,7 +17,8 @@ enum EMethods {
 enum ERead {
 	READ_OK = 0,
 	READ_EOF,
-	READ_ERROR
+	READ_ERROR,
+	READ_WAIT
 };
 
 EMethods	get_method(const std::string& method) {
