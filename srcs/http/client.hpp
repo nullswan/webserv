@@ -77,7 +77,7 @@ class Client {
 				_last_ping = *(_last_request->get_time());
 			}
 			else {
-				_last_request->init(buffer);
+				_last_request->handle_buffer(buffer);
 			}
 			return _request_status();
 		}
@@ -99,12 +99,26 @@ class Client {
 
  private:
 	ERead	_request_status() {
+		bool header_status = _last_request->get_header_status();
 		const std::string request = _last_request->get_raw_request();
-		if (request.find("\r\n\r\n") == std::string::npos) {
+		if (header_status == false && request.find("\r\n\r\n") == std::string::npos) {
 			return Models::READ_WAIT;
 		}
 		else {
-			_last_request->parse();
+			if (header_status == false) {
+				_last_request->init();
+				_last_request->set_header_status(true);
+			}
+			const EMethods method = _last_request->get_method();
+			if (method == Models::POST) {
+				_last_request->read_body();
+				const bool body_status = _last_request->get_body_status();
+				if (body_status == false) {
+					return Models::READ_WAIT;
+				}
+				_last_request->__repr__();
+				return Models::READ_OK;
+			}
 			return Models::READ_OK;
 		}
 	}
