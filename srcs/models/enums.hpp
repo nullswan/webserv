@@ -14,6 +14,13 @@ enum EMethods {
 	METHOD_UNKNOWN
 };
 
+enum EPostForm {
+	URLENCODED = 0,
+	MULTIPART,
+	POST_FORMS_TOTAL,
+	POST_FORM_UNKNOWN
+};
+
 enum ERead {
 	READ_OK = 0,
 	READ_EOF,
