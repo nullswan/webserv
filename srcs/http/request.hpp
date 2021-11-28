@@ -15,6 +15,7 @@ class Request {
 	typedef std::map<std::string, std::string>::const_iterator	const_iterator;
 	typedef Webserv::Models::EMethods							EMethod;
 	typedef Webserv::Models::EPostForm							EPostForm;
+	typedef Webserv::Models::ERead								ERead;
 
  private:
 	struct timeval _time;
@@ -26,110 +27,98 @@ class Request {
 	std::string _http_version;
 
 	std::map<std::string, std::string>	_headers;
-	std::map<std::string, std::string>	_body;
+	std::map<std::string, std::string>	_form;
+	std::string							_raw_payload;
 
 	EPostForm	_post_form;
 	size_t		_body_size;
-	std::string	_body_boundary;
+	std::string	_multipart_boundary;
 
 	bool	_headers_ready;
 	bool	_body_ready;
 	bool	_chunked;
+	size_t	_chunk_size;
 	bool	_closed;
 
  public:
 	explicit Request(std::string buffer) : _raw_request(buffer),
 		_method(Models::METHOD_UNKNOWN), _uri(""), _http_version(""),
-		_headers(), _body(),
-		_post_form(Models::POST_FORM_UNKNOWN), _body_size(0), _body_boundary(""),
+		_headers(), _form(), _raw_payload(""),
+		_post_form(Models::POST_FORM_UNKNOWN), _body_size(0), _multipart_boundary(""),
 		_headers_ready(false), _body_ready(false),
-		_chunked(false), _closed(false) {
+		_chunked(false), _chunk_size(0), _closed(false) {
 		gettimeofday(&_time, NULL);
 	}
 
 	void	handle_buffer(std::string buffer) { _raw_request += buffer; }
 
-	void	init() {
-		if (!_extract_method(&_raw_request))
-			return;
-		if (!_extract_uri(&_raw_request))
-			return;
-		if (!_extract_http_version(&_raw_request))
-			return;
-		_extract_headers(&_raw_request);
+	bool	init() {
+		if (_extract_method() == false)
+			return false;
+		if (_extract_uri() == false)
+			return false;
+		if (_extract_http_version() == false)
+			return false;
+		_extract_headers(_headers);
 		const_iterator it = _headers.find("Host");
 		if (it == _headers.end() || it->second == "") {
-			_bad_request();
-			return ;
-		}
-		it = _headers.find("Transfer-Encoding");
-		if (it != _headers.end() && it->second.find("chunked") != std::string::npos) {
-			_chunked = true;
+			return _bad_request();
 		}
 		if (_method == Models::POST) {
+			it = _headers.find("Transfer-Encoding");
+			if (it != _headers.end() && it->second.find("chunked") != std::string::npos) {
+				_chunked = true;
+			}
+			else {
+				it = _headers.find("Content-Length");
+				if (it == _headers.end() || it->second == "") {
+					return _bad_request();
+				}
+				_body_size = static_cast<size_t>(atoi(it->second.c_str()));
+			}
 			it = _headers.find("Content-Type");
-			if (it == _headers.end()) {
-				_bad_request();
-				return ;
+			if (it == _headers.end() || it->second == "") {
+				return _bad_request();
 			}
 			if (it->second.find("application/x-www-form-urlencoded") == 0) {
 				_post_form = Models::URLENCODED;
-				if (_chunked == false) {
-					it = _headers.find("Content-Length");
-					if (it == _headers.end()) {
-						_bad_request();
-						return ;
-					}
-					_body_size = static_cast<size_t>(atoi(it->second.c_str()));
-				}
 			}
 			else if (it->second.find("multipart/form-data") == 0) {
 				_post_form = Models::MULTIPART;
 				size_t boundary_start = it->second.find("boundary");
 				if (boundary_start == std::string::npos) {
-					_bad_request();
-					return ;
+					return _bad_request();
 				}
-				boundary_start += 10;
-				size_t boundary_size = it->second.substr(boundary_start).find("\"");
-				if (boundary_size == std::string::npos) {
-					_bad_request();
-					return ;
-				}
-				_body_boundary = "--" + it->second.substr(boundary_start, boundary_size);
+				boundary_start += 9;
+				const size_t boundary_size = it->second.substr(boundary_start).find(" ");
+				_multipart_boundary = "--" + it->second.substr(boundary_start, boundary_size);
 			}
 		}
-		_raw_request = _raw_request.substr(2);
+		_raw_request.erase(0, 2);
+		return true;
 	}
 
-	void	read_body() {
+	bool	read_body() {
 		if (_chunked == true) {
-			if (_raw_request.find("0\r\n\r\n") == std::string::npos) {
-				return ;
+			if (_read_chunks() == Models::READ_WAIT) {
+				return false;
 			}
-			// do decoding and clean buffer (_raw_request);
-			_body_size = _raw_request.size();
+			_body_size = _raw_payload.size();
 			_chunked = false;
 		}
-		else {
-			if (_post_form == Models::URLENCODED) {
-				if (_raw_request.size() < _body_size) {
-					return ;
-				}
-				_raw_request = _raw_request.substr(0, _body_size);
-				_extract_urlencoded();
-				_body_ready = true;
-			}
-			else if (_post_form == Models::MULTIPART) {
-				const std::string end_boundary = _body_boundary + "--";
-				if (_raw_request.find(end_boundary) == std::string::npos) {
-					return ;
-				}
-				_raw_request = _raw_request.substr(0, _raw_request.size() - end_boundary.size());
-				_extract_multipart();
-				_body_ready = true;
-			}
+		if (_raw_request.size() < _body_size) {
+			return false;
 		}
+		_raw_request = _raw_request.substr(0, _body_size);
+		if (_post_form == Models::URLENCODED) {
+			_extract_urlencoded();
+		}
+		else if (_post_form == Models::MULTIPART) {
+			_extract_multipart();
+		}
+		_body_ready = true;
+		__repr__();
+		return true;
 	}
 
 	bool	closed() {
@@ -159,8 +148,7 @@ class Request {
 		}
 	}
 	bool		get_header_status() const { return _headers_ready; }
-	bool		get_body_status() const { return _body_ready; }
-	bool		get_chunked_status() const { return _chunked; }
+	size_t		get_chunk_size() const { return _chunk_size; }
 
 	void		set_header_status(bool status) { _headers_ready = status; }
 
@@ -175,89 +163,138 @@ class Request {
 		}
 
 		std::map<std::string, std::string>::iterator it2;
-		for (it2 = _body.begin(); it2 != _body.end(); it2++) {
+		for (it2 = _form.begin(); it2 != _form.end(); it2++) {
 			std::cout << "{" << it2->first << ": " << it2->second << "}" << std::endl;
 		}
 	}
 
  private:
-	bool	_extract_method(std::string *buffer) {
-		size_t	method_separator_pos = buffer->find(" ");
+	ERead	_read_chunks() {
+		if (_raw_request.size() == 0) {
+			return Models::READ_WAIT;
+		}
+		else {
+			if (_chunk_size == 0) {
+				const size_t header_end = _raw_request.find("\r\n");
+				if (header_end == std::string::npos) {
+					return Models::READ_ERROR;
+				}
+				_chunk_size = static_cast<size_t>(atoi(_raw_request.substr(0, header_end).c_str()));
+				_raw_request.erase(0, header_end + 2);
+				if (_chunk_size == 0) {
+					return Models::READ_OK;
+				}
+			}
+			else {
+				const size_t chunk_end = _raw_request.find("\r\n");
+				if (chunk_end == std::string::npos) {
+					return Models::READ_ERROR;
+				}
+				_raw_payload += _raw_request.substr(0, chunk_end);
+				_raw_request.erase(0, chunk_end + 2);
+				_chunk_size = 0;
+			}
+			return Models::READ_WAIT;
+		}
+	}
+
+	bool	_extract_method() {
+		size_t	method_separator_pos = _raw_request.find(" ");
 		if (method_separator_pos == std::string::npos)
 			return _bad_request();
 
-		std::string	method_str = buffer->substr(0, method_separator_pos);
+		std::string	method_str = _raw_request.substr(0, method_separator_pos);
 		_method = Models::get_method(method_str);
-		buffer->erase(0, method_separator_pos + 1);
+		_raw_request.erase(0, method_separator_pos + 1);
 		return true;
 	}
 
-	bool	_extract_uri(std::string *buffer) {
-		size_t	uri_separator_pos = buffer->find(" ");
+	bool	_extract_uri() {
+		size_t	uri_separator_pos = _raw_request.find(" ");
 		if (uri_separator_pos == std::string::npos)
 			return _bad_request();
 
-		_uri = buffer->substr(0, uri_separator_pos);
-		buffer->erase(0, uri_separator_pos + 1);
+		_uri = _raw_request.substr(0, uri_separator_pos);
+		_raw_request.erase(0, uri_separator_pos + 1);
 		return true;
 	}
 
-	bool	_extract_http_version(std::string *buffer) {
-		size_t	version_separator_pos = buffer->find("\r\n");
+	bool	_extract_http_version() {
+		size_t	version_separator_pos = _raw_request.find("\r\n");
 		if (version_separator_pos == std::string::npos)
 			return _bad_request();
 
-		_http_version = buffer->substr(0, version_separator_pos);
-		buffer->erase(0, version_separator_pos + 2);
+		_http_version = _raw_request.substr(0, version_separator_pos);
+		_raw_request.erase(0, version_separator_pos + 2);
 		return true;
 	}
 
-	void	_extract_headers(std::string *buffer) {
-		size_t	header_separator_pos = buffer->find("\r\n");
+	void	_extract_headers(std::map<std::string, std::string> &headers) {
+		size_t	header_separator_pos = _raw_request.find("\r\n");
 		while (header_separator_pos != std::string::npos) {
-			std::string	header_str = buffer->substr(0, header_separator_pos);
+			std::string	header_str = _raw_request.substr(0, header_separator_pos);
 			size_t		header_name_separator_pos = header_str.find(":");
 			if (header_name_separator_pos == std::string::npos)
 				break;
 			std::string	header_name = header_str.substr(0, header_name_separator_pos);
-			std::string	header_content = header_str.substr(header_name_separator_pos + 1);
-			std::string header_value = _trim(header_content);
-			_headers[header_name] = header_value;
-			buffer->erase(0, header_separator_pos + 2);
-			header_separator_pos = buffer->find("\r\n");
+			std::string	header_value = header_str.substr(header_name_separator_pos + 1);
+			_trim(header_value);
+			headers[header_name] = header_value;
+			_raw_request.erase(0, header_separator_pos + 2);
+			header_separator_pos = _raw_request.find("\r\n");
 		}
 	}
 
 	void	_extract_urlencoded() {
-		size_t body_separator_pos;
+		size_t form_separator_pos;
 		do {
-			body_separator_pos = _raw_request.find("&");
-			const std::string body_entry = _raw_request.substr(0, body_separator_pos);
-			const size_t body_entry_separator_pos = body_entry.find("=");
-			if (body_entry_separator_pos == std::string::npos) {
+			form_separator_pos = _raw_request.find("&");
+			const std::string form_field = _raw_request.substr(0, form_separator_pos);
+			const size_t form_field_separator_pos = form_field.find("=");
+			if (form_field_separator_pos == std::string::npos) {
 				break ;
 			}
-			const std::string body_field = body_entry.substr(0, body_entry_separator_pos);
-			const std::string body_value = body_entry.substr(body_entry_separator_pos + 1);
-			_body[body_field] = body_value;
-			_raw_request.erase(0, body_separator_pos + 1);
-		} while (body_separator_pos != std::string::npos);
+			const std::string form_name = form_field.substr(0, form_field_separator_pos);
+			const std::string form_value = form_field.substr(form_field_separator_pos + 1);
+			_form[form_name] = form_value;
+			_raw_request.erase(0, form_separator_pos + 1);
+		} while (form_separator_pos != std::string::npos);
 	}
 
 	void	_extract_multipart() {
-		// size_t boundary = _raw_request.find(_body_boundary);
-		// while (boundary != std::string::npos) {
-		// 	std::string	header_str = _raw_request.substr(0, boundary);
-		// 	size_t		header_name_separator_pos = header_str.find(":");
-		// 	if (header_name_separator_pos == std::string::npos)
-		// 		break;
-		// 	std::string	header_name = header_str.substr(0, header_name_separator_pos);
-		// 	std::string	header_content = header_str.substr(header_name_separator_pos + 1);
-		// 	std::string header_value = _trim(header_content);
-		// 	_headers[header_name] = header_value;
-		// 	buffer->erase(0, header_separator_pos + 2);
-		// 	header_separator_pos = buffer->find("\r\n");
-		// }
+		size_t boundary = _raw_request.find(_multipart_boundary + "\r\n");
+		while (boundary != std::string::npos) {
+			_raw_request.erase(0, _multipart_boundary.size() + 2);
+			std::map<std::string, std::string> boundary_headers;
+			_extract_headers(boundary_headers);
+			_raw_request.erase(0, 2);
+			const_iterator it = boundary_headers.find("Content-Disposition");
+			if (it == boundary_headers.end() || it->second == "" || it->second.find("form-data") == std::string::npos) {
+				_bad_request();
+				return ;
+			}
+			size_t form_name_start = it->second.find("name");
+			if (form_name_start == std::string::npos) {
+				_bad_request();
+				return ;
+			}
+			std::string form_name = it->second.substr(form_name_start + 5);
+			size_t form_name_end = form_name.find(" ");
+			if (form_name_end != std::string::npos) {
+				form_name.erase(form_name_end);
+			}
+			_trim(form_name, "\"");
+			const size_t form_value_end = _raw_request.find(_multipart_boundary);
+			if (form_value_end == std::string::npos) {
+				_bad_request();
+				return ;
+			}
+			std::string form_value = _raw_request.substr(0, form_value_end);
+			_rtrim(form_value, "\r\n");
+			_form[form_name] = form_value;
+			_raw_request.erase(0, form_value.size() + 2);
+			boundary = _raw_request.find(_multipart_boundary + "\r\n");
+		}
 	}
 
 	bool	_bad_request() {
