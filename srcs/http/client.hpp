@@ -65,13 +65,27 @@ class Client {
 	}
 
 	ERead read_request() {
+		std::cout << "check" << std::endl;
+		const size_t chunk_size = _last_request ? _last_request->get_chunk_size() : 0;
+		if (chunk_size != 0) {
+			char buffer[chunk_size + 1];
+			ssize_t n = recv(_fd, buffer, chunk_size, 0);
+			std::cout << n << std::endl;
+			if (n != (ssize_t)chunk_size) {
+				return Models::READ_ERROR;
+			}
+			buffer[chunk_size] = '\0';
+			std::cout << buffer << std::endl;
+			_last_request->handle_buffer(buffer);
+		}
 		char buffer[REQ_BUF_SIZE + 1] = {0};
-		int n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
+		ssize_t n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
 		if (n == -1) {
 			return Models::READ_ERROR;
 		} else if (n == 0) {
 			return Models::READ_EOF;
 		} else {
+			std::cout << buffer << std::endl;
 			if (_last_request == NULL) {
 				_last_request = new Request(buffer);
 				_last_ping = *(_last_request->get_time());
@@ -106,17 +120,16 @@ class Client {
 		}
 		else {
 			if (header_status == false) {
-				_last_request->init();
+				if (_last_request->init() == false) {
+					return Models::READ_OK;
+				}
 				_last_request->set_header_status(true);
 			}
 			const EMethods method = _last_request->get_method();
 			if (method == Models::POST) {
-				_last_request->read_body();
-				const bool body_status = _last_request->get_body_status();
-				if (body_status == false) {
+				if (_last_request->read_body() == false) {
 					return Models::READ_WAIT;
 				}
-				_last_request->__repr__();
 				return Models::READ_OK;
 			}
 			return Models::READ_OK;
