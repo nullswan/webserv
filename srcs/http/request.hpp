@@ -28,7 +28,6 @@ class Request {
 
 	std::map<std::string, std::string>	_headers;
 	std::map<std::string, std::string>	_form;
-	std::string							_raw_payload;
 
 	EPostForm	_post_form;
 	size_t		_body_size;
@@ -37,16 +36,15 @@ class Request {
 	bool	_headers_ready;
 	bool	_body_ready;
 	bool	_chunked;
-	size_t	_chunk_size;
 	bool	_closed;
 
  public:
 	explicit Request(std::string buffer) : _raw_request(buffer),
 		_method(Models::METHOD_UNKNOWN), _uri(""), _http_version(""),
-		_headers(), _form(), _raw_payload(""),
+		_headers(), _form(),
 		_post_form(Models::POST_FORM_UNKNOWN), _body_size(0), _multipart_boundary(""),
 		_headers_ready(false), _body_ready(false),
-		_chunked(false), _chunk_size(0), _closed(false) {
+		_chunked(false), _closed(false) {
 		gettimeofday(&_time, NULL);
 	}
 
@@ -103,13 +101,12 @@ class Request {
 			if (_read_chunks() == Models::READ_WAIT) {
 				return false;
 			}
-			_body_size = _raw_payload.size();
+			_body_size = _raw_request.size();
 			_chunked = false;
 		}
 		if (_raw_request.size() < _body_size) {
 			return false;
 		}
-		_raw_request = _raw_request.substr(0, _body_size);
 		if (_post_form == Models::URLENCODED) {
 			_extract_urlencoded();
 		}
@@ -148,7 +145,6 @@ class Request {
 		}
 	}
 	bool		get_header_status() const { return _headers_ready; }
-	size_t		get_chunk_size() const { return _chunk_size; }
 
 	void		set_header_status(bool status) { _headers_ready = status; }
 
@@ -170,31 +166,27 @@ class Request {
 
  private:
 	ERead	_read_chunks() {
-		if (_raw_request.size() == 0) {
+		if (_raw_request.find("0\r\n\r\n") == std::string::npos) {
+			std::cout << "check" << std::endl;
 			return Models::READ_WAIT;
 		}
 		else {
-			if (_chunk_size == 0) {
+			std::string payload("");
+			do {
 				const size_t header_end = _raw_request.find("\r\n");
 				if (header_end == std::string::npos) {
 					return Models::READ_ERROR;
 				}
-				_chunk_size = static_cast<size_t>(atoi(_raw_request.substr(0, header_end).c_str()));
+				const long chunk_size = strtol(_raw_request.substr(0, header_end).c_str(), NULL, 16);
 				_raw_request.erase(0, header_end + 2);
-				if (_chunk_size == 0) {
+				if (chunk_size == 0) {
+					_raw_request = payload;
 					return Models::READ_OK;
 				}
-			}
-			else {
-				const size_t chunk_end = _raw_request.find("\r\n");
-				if (chunk_end == std::string::npos) {
-					return Models::READ_ERROR;
-				}
-				_raw_payload += _raw_request.substr(0, chunk_end);
-				_raw_request.erase(0, chunk_end + 2);
-				_chunk_size = 0;
-			}
-			return Models::READ_WAIT;
+				payload += _raw_request.substr(0, chunk_size);
+				_raw_request.erase(0, chunk_size + 2);
+				return Models::READ_WAIT;
+			} while (true);
 		}
 	}
 
