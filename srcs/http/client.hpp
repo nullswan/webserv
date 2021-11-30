@@ -65,19 +65,6 @@ class Client {
 	}
 
 	ERead read_request() {
-		std::cout << "check" << std::endl;
-		const size_t chunk_size = _last_request ? _last_request->get_chunk_size() : 0;
-		if (chunk_size != 0) {
-			char buffer[chunk_size + 1];
-			ssize_t n = recv(_fd, buffer, chunk_size, 0);
-			std::cout << n << std::endl;
-			if (n != (ssize_t)chunk_size) {
-				return Models::READ_ERROR;
-			}
-			buffer[chunk_size] = '\0';
-			std::cout << buffer << std::endl;
-			_last_request->handle_buffer(buffer);
-		}
 		char buffer[REQ_BUF_SIZE + 1] = {0};
 		ssize_t n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
 		if (n == -1) {
@@ -85,7 +72,6 @@ class Client {
 		} else if (n == 0) {
 			return Models::READ_EOF;
 		} else {
-			std::cout << buffer << std::endl;
 			if (_last_request == NULL) {
 				_last_request = new Request(buffer);
 				_last_ping = *(_last_request->get_time());
