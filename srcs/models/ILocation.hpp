@@ -11,7 +11,7 @@
 
 namespace Webserv {
 namespace Models {
-class ILocation : protected Webserv::Models::IBlock {
+class ILocation : public Webserv::Models::IBlock {
 };
 }  // namespace Models
 }  // namespace Webserv
