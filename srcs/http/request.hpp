@@ -145,7 +145,8 @@ class Request {
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;
-		std::cout << "\tmethod: " << Models::resolve_method(_method) << ", " << std::endl;
+		std::cout << "\tmethod: " << Models::resolve_method(_method)
+			<< ", " << std::endl;
 		std::cout << "\turi: " << _uri << ", " << std::endl;
 		std::cout << "\thttp_version: " << _http_version << ", " << std::endl;
 		std::cout << "\theaders: {" << std::endl;
@@ -154,13 +155,14 @@ class Request {
 		for (it = _headers.begin(); it != _headers.end(); it++) {
 			std::cout << "\t\t" << it->first << ": " << it->second << ", " << std::endl;
 		}
-		
+
 		if (_method == Models::POST) {
 			std::cout << "\t}," << std::endl;
 			std::cout << "\tform: {" << std::endl;
 			std::map<std::string, std::string>::iterator it2;
 			for (it2 = _form.begin(); it2 != _form.end(); it2++) {
-				std::cout << "\t\t" << it2->first << ": " << it2->second << ", " << std::endl;
+				std::cout << "\t\t" << it2->first << ": "
+					<< it2->second << ", " << std::endl;
 			}
 			std::cout << "\t}" << std::endl;
 		} else {
