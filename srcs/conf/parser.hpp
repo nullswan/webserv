@@ -21,14 +21,18 @@ namespace Conf {
 class Parser {
  public:
 	typedef Webserv::Models::IServer IServer;
+	typedef std::vector<IServer *> IServerList;
 
  private:
 	std::vector<IServer *>	_servers;
+	std::string _conf_file_path;
+	std::string	_conf_file;
 
  public:
-	Parser(int ac, char **av) {
-		(void)ac;
-		(void)av;
+	Parser() : _conf_file_path("") {
+	}
+
+	~Parser() { clear(); }
 
 		/*
 			Inject a default server
@@ -57,8 +61,24 @@ class Parser {
 		_servers.clear();
 	}
 
-	std::vector<Webserv::Models::IServer *>	&getServers() {
+	IServerList	&getServers() {
 		return _servers;
+	}
+	bool	_check_file_flags() {
+		struct stat buffer;
+		if (stat(_conf_file_path.c_str(), &buffer) != 0)
+			return file_not_found_error(_conf_file_path);
+		else if (buffer.st_mode & S_IFDIR)
+			return file_is_directory_error(_conf_file_path);
+
+		if (access(_conf_file_path.c_str(), F_OK) == -1)
+			return insufficient_permission_error(_conf_file_path);
+
+		return true;
+	}
+	inline void	_skip_whitespaces(std::string *s) {
+		while ((*s)[0] == '\t' || (*s)[0] == ' ')
+			s->erase(0, 1);
 	}
 };
 }  // namespace Conf
