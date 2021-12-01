@@ -111,7 +111,6 @@ class Request {
 			_extract_multipart();
 		}
 		_body_ready = true;
-		__repr__();
 		return true;
 	}
 
@@ -145,25 +144,36 @@ class Request {
 	void		set_header_status(bool status) { _headers_ready = status; }
 
 	void	__repr__() {
-		std::cout << "Request{method: " << Models::resolve_method(_method)
-			<< ", uri: " << _uri
-			<< ", http_version: " << _http_version << "}" << std::endl;
+		std::cout << "Request{" << std::endl;
+		std::cout << "\tmethod: " << Models::resolve_method(_method)
+			<< ", " << std::endl;
+		std::cout << "\turi: " << _uri << ", " << std::endl;
+		std::cout << "\thttp_version: " << _http_version << ", " << std::endl;
+		std::cout << "\theaders: {" << std::endl;
 
 		std::map<std::string, std::string>::iterator it;
 		for (it = _headers.begin(); it != _headers.end(); it++) {
-			std::cout << "{" << it->first << ": " << it->second << "}" << std::endl;
+			std::cout << "\t\t" << it->first << ": " << it->second << ", " << std::endl;
 		}
 
-		std::map<std::string, std::string>::iterator it2;
-		for (it2 = _form.begin(); it2 != _form.end(); it2++) {
-			std::cout << "{" << it2->first << ": " << it2->second << "}" << std::endl;
+		if (_method == Models::POST) {
+			std::cout << "\t}," << std::endl;
+			std::cout << "\tform: {" << std::endl;
+			std::map<std::string, std::string>::iterator it2;
+			for (it2 = _form.begin(); it2 != _form.end(); it2++) {
+				std::cout << "\t\t" << it2->first << ": "
+					<< it2->second << ", " << std::endl;
+			}
+			std::cout << "\t}" << std::endl;
+		} else {
+			std::cout << "\t}" << std::endl;
 		}
+		std::cout << "}" << std::endl;
 	}
 
  private:
 	ERead	_read_chunks() {
 		if (_raw_request.find("0\r\n\r\n") == std::string::npos) {
-			std::cout << "check" << std::endl;
 			return Models::READ_WAIT;
 		} else {
 			std::string payload("");
