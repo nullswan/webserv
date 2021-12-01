@@ -2,8 +2,8 @@
 #include "server/poll.hpp"
 
 int	main(int ac, char **av) {
-	Webserv::Conf::Parser	parser(ac, av);
-	if (!parser.run()) {
+	Webserv::Conf::Parser	parser;
+	if (!parser.run(ac, av)) {
 		return (1);
 	}
 
