@@ -180,10 +180,10 @@ class Poll {
 
 		Client *client = _clients[ev_fd];
 		ERead ret = client->read_request();
-		if (ret == Models::READ_EOF || ret == Models::READ_ERROR) {
+		if (ret == Models::READ_EOF || ret == Models::READ_ERROR)
 			return _delete_client(ev_fd, client);
-		}
-		return _change_epoll_state(ev_fd, EPOLLOUT);
+		else if (ret == Models::READ_OK)
+			return _change_epoll_state(ev_fd, EPOLLOUT);
 	}
 	void	_handle_write(int ev_fd) {
 		Client *client = _clients[ev_fd];
@@ -199,10 +199,17 @@ class Poll {
 	void	_handle_stdin() {
 		std::string line;
 
-		if (!std::getline(std::cin, line) || line == "quit" || line == "exit") {
-			_alive = false;
-			std::cout << "Shutting down Webserv gracefully..." << std::endl;
-		}
+		#ifndef WEBSERV_BENCHMARK
+			if (!std::getline(std::cin, line) || line == "quit" || line == "exit") {
+				_alive = false;
+				std::cout << "Shutting down Webserv gracefully..." << std::endl;
+			}
+		#else
+			if (line == "quit" || line == "exit") {
+				_alive = false;
+				std::cout << "Shutting down Webserv gracefully..." << std::endl;
+			}
+		#endif
 	}
 	void	_handle_expired_clients() {
 		struct timeval now;
@@ -218,9 +225,9 @@ class Poll {
 	}
 
 	void	_delete_client(int ev_fd, Client *client) {
+		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev_fd, NULL);
 		delete client;
 		_clients.erase(ev_fd);
-		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev_fd, NULL);
 	}
 
 	void	_change_epoll_state(int ev_fd, int state) {

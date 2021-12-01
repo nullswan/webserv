@@ -14,10 +14,18 @@ enum EMethods {
 	METHOD_UNKNOWN
 };
 
+enum EPostForm {
+	URLENCODED = 0,
+	MULTIPART,
+	POST_FORMS_TOTAL,
+	POST_FORM_UNKNOWN
+};
+
 enum ERead {
 	READ_OK = 0,
 	READ_EOF,
-	READ_ERROR
+	READ_ERROR,
+	READ_WAIT
 };
 
 EMethods	get_method(const std::string& method) {

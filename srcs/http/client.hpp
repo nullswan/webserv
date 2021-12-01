@@ -21,6 +21,7 @@
 namespace Webserv {
 namespace Http {
 class Client {
+	typedef Webserv::Models::EMethods	EMethods;
 	typedef Webserv::Models::ERead	ERead;
 	typedef Webserv::Http::Request	Request;
 	typedef Webserv::Models::IServer	IServer;
@@ -64,18 +65,20 @@ class Client {
 	}
 
 	ERead read_request() {
-		char buffer[REQ_BUF_SIZE];
-		int n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
+		char buffer[REQ_BUF_SIZE + 1] = {0};
+		ssize_t n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
 		if (n == -1) {
 			return Models::READ_ERROR;
 		} else if (n == 0) {
 			return Models::READ_EOF;
 		} else {
-			if (_last_request)
-				delete _last_request;
-			_last_request = new Request(buffer);
-			_last_ping = *(_last_request->get_time());
-			return Models::READ_OK;
+			if (_last_request == NULL) {
+				_last_request = new Request(buffer);
+				_last_ping = *(_last_request->get_time());
+			} else {
+				_last_request->handle_buffer(buffer);
+			}
+			return _request_status();
 		}
 	}
 
@@ -94,6 +97,29 @@ class Client {
 	}
 
  private:
+	ERead	_request_status() {
+		bool header_status = _last_request->get_header_status();
+		const std::string request = _last_request->get_raw_request();
+		if (header_status == false && request.find("\r\n\r\n") == std::string::npos) {
+			return Models::READ_WAIT;
+		} else {
+			if (header_status == false) {
+				if (_last_request->init() == false) {
+					return Models::READ_OK;
+				}
+				_last_request->set_header_status(true);
+			}
+			const EMethods method = _last_request->get_method();
+			if (method == Models::POST) {
+				if (_last_request->read_body() == false) {
+					return Models::READ_WAIT;
+				}
+				return Models::READ_OK;
+			}
+			return Models::READ_OK;
+		}
+	}
+
 	bool	_close() {
 		if (_last_request) {
 			bool state = _last_request->closed();
@@ -101,7 +127,7 @@ class Client {
 				__log();
 			#endif
 			delete _last_request;
-			_last_request = 0;
+			_last_request = NULL;
 			return state;
 		}
 		return true;
