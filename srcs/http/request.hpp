@@ -63,6 +63,7 @@ class Request {
 		if (_method == Models::POST && _validate_post() == false)
 			return false;
 		_raw_request.erase(0, 2);
+		_headers_ready = true;
 		return true;
 	}
 
@@ -114,7 +115,6 @@ class Request {
 	}
 	bool		get_header_status() const { return _headers_ready; }
 
-	void		set_header_status(bool status) { _headers_ready = status; }
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;
