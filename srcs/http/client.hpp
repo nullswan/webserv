@@ -75,8 +75,7 @@ class Client {
 			if (_last_request == NULL) {
 				_last_request = new Request(buffer);
 				_last_ping = *(_last_request->get_time());
-			}
-			else {
+			} else {
 				_last_request->handle_buffer(buffer);
 			}
 			return _request_status();
@@ -103,8 +102,7 @@ class Client {
 		const std::string request = _last_request->get_raw_request();
 		if (header_status == false && request.find("\r\n\r\n") == std::string::npos) {
 			return Models::READ_WAIT;
-		}
-		else {
+		} else {
 			if (header_status == false) {
 				if (_last_request->init() == false) {
 					return Models::READ_OK;
