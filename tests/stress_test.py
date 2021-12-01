@@ -11,7 +11,7 @@ def run_test():
 
 	siege = subprocess.Popen(
 		[
-			"siege", "http://127.0.0.1:8080/", 
+			"siege", "http://127.0.0.1:8000/", 
 			"--concurrent", "255", "--reps", "1000", "--benchmark", "--quiet", "--json-output"
 		],
 		stdout=subprocess.PIPE)
