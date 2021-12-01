@@ -56,7 +56,7 @@ bool	use_default_configuration() {
 }
 
 bool	invalid_delimiter_error(const std::string &line) {
-	std::cout << "invalid delimiter: "
+	std::cerr << "invalid delimiter: "
 		<< line.substr(0, line.size() - 1)
 		<< ">" << line.substr(line.size() - 1, line.size())
 		 << "<" << std::endl;
@@ -64,7 +64,12 @@ bool	invalid_delimiter_error(const std::string &line) {
 }
 
 bool	unknown_method_error(const std::string &method) {
-	std::cout << "unknown or unsupported method: " << method << std::endl;
+	std::cerr << "unknown or unsupported method: " << method << std::endl;
+	return false;
+}
+
+bool	invalid_http_code_error(const int &code) {
+	std::cerr << code << " is invalid in HTTP/1.x" << std::endl;
 	return false;
 }
 
