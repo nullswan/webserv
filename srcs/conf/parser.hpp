@@ -164,16 +164,28 @@ class Parser {
 	}
 
 	int _resolve_key(const std::string &key) {
-		if (key == "server_name")
-			return CONF_SERVER_NAME;
-		if (key == "index")
-			return CONF_SERVER_INDEX;
 		if (key == "allowed_methods")
 			return CONF_BLOCK_ALLOWED_METHODS;
-		if (key == "redirect")
-			return CONF_BLOCK_REDIRECT;
+		if (key == "autoindex")
+			return CONF_SERVER_INDEX;
+		if (key == "body_limit")
+			return CONF_BLOCK_BODY_LIMIT;
+		if (key == "cgi")
+			return CONF_BLOCK_CGI_PATH;
+		if (key == "error_page")
+			return CONF_SERVER_ERROR_PAGE;
+		if (key == "index")
+			return CONF_SERVER_INDEX;
 		if (key == "location")
 			return CONF_SERVER_LOCATION;
+		if (key == "listen")
+			return CONF_SERVER_LISTEN;
+		if (key == "redirect")
+			return CONF_BLOCK_REDIRECT;
+		if (key == "root")
+			return CONF_BLOCK_ROOT;
+		if (key == "server_name")
+			return CONF_SERVER_NAME;
 		return CONF_NOT_FOUND_TOKEN;
 	}
 
@@ -209,7 +221,7 @@ class Parser {
 		std::string line;
 		std::stringstream	ss(_conf_file);
 
-		std::vector<ILocation *>	nested_locations;
+		std::vector<ILocation *>	locations;
 		int token = 0, scope = 0, line_count = 0;
 		while (std::getline(ss, line) && ++line_count) {
 			token = _resolve_line(&line, scope);
@@ -217,8 +229,8 @@ class Parser {
 				case CONF_EMPTY_TOKEN:
 					continue;
 				case CONF_SERVER_OPENING: {
-					_servers.push_back(new IServer());
 					++scope;
+					_servers.push_back(new IServer());
 					continue;
 				}
 				// case CONF_ERRORENOUS_TOKEN:
@@ -263,22 +275,25 @@ class Parser {
 					int	status_code = atoi(line.c_str());
 					if (status_code < 200 || status_code > 527)
 						return invalid_http_code_error(status_code);
-					if (scope == 1) {
-						_servers.back()->set_redirection(line.erase(0, 4), status_code);
-					}
-					// else if loc
+
+					std::string url = line.erase(0, 4);
+					if (scope == 1)
+						_servers.back()->set_redirection(url, status_code);
+					else
+						locations.back()->set_redirection(url, status_code);
 					continue;
 				}
 				case CONF_SERVER_LOCATION: {
 					++scope;
-
 					_extract_value("location", &line, true);
 
-					std::cout << line << std::endl;
+					ILocation *block = new ILocation();
+					_servers.back()->add_location(line, block);
+					locations.push_back(block);
 					continue;
 				}
 				default:
-					std::cout << "tk: " << token << " | " << line << std::endl;
+					std::cout << "new_tk: " << token << " | " << line << std::endl;
 					continue;
 			}
 		}
