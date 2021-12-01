@@ -11,8 +11,25 @@ Server can contains specific name, host and port
 ```
 server {
 	server_name (IServer._name<std::string>)
-	host (IServer._host<std::string>));
-	port (IServer._port<int>);
+	listen		(IServer._host<std::string>):(IServer._port<int>);
+
+	// or
+
+	listen		:(IServer._port<int>);
+
+	// or
+
+	listen		(IServer._port<int>);
+
+	// or
+
+	listen		(IServer._host<std::string>);	// port 80 is used
+
+	/* 
+		If listen is not defined, *:80 is used 
+		if webserv runs with the superuser privileges, 
+		or *:8000 otherwise. 
+	*/
 }
 ```
 
