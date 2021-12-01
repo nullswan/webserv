@@ -12,6 +12,7 @@
 #define CONF_PARSER_HPP_
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 
 #include <string>
@@ -23,12 +24,15 @@
 #include "enums.hpp"
 #include "errors.hpp"
 #include "../models/IServer.hpp"
+#include "../models/ILocation.hpp"
 
 namespace Webserv {
 namespace Conf {
 class Parser {
  public:
-	typedef Webserv::Models::IServer IServer;
+	typedef Webserv::Models::IServer	IServer;
+	typedef Webserv::Models::ILocation	ILocation;
+
 	typedef std::vector<IServer *> IServerList;
 
  private:
@@ -145,7 +149,8 @@ class Parser {
 			return CONF_ERRORENOUS_TOKEN;
 		if ((*line)[0] == '}' && line->size() == 1)
 			return CONF_BLOCK_CLOSING;
-		return _resolve_keys(line->substr(0, line->find("\t")), line->substr(0, line->find(" ")));
+		return _resolve_keys(line->substr(0, line->find("\t")), 
+			line->substr(0, line->find(" ")));
 	}
 
 	int
@@ -250,6 +255,26 @@ class Parser {
 							return unknown_method_error(*it);
 						_servers.back()->set_method(Models::get_method(*it), true);
 					}
+					continue;
+				}
+				case CONF_BLOCK_REDIRECT: {
+					_extract_value("redirect", &line, false);
+
+					int	status_code = atoi(line.c_str());
+					if (status_code < 200 || status_code > 527)
+						return invalid_http_code_error(status_code);
+					if (scope == 1) {
+						_servers.back()->set_redirection(line.erase(0, 4), status_code);
+					}
+					// else if loc
+					continue;
+				}
+				case CONF_SERVER_LOCATION: {
+					++scope;
+
+					_extract_value("location", &line, true);
+
+					std::cout << line << std::endl;
 					continue;
 				}
 				default:

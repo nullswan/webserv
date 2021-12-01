@@ -204,9 +204,9 @@ class Client {
 		if (sec > 0) {
 			ss << sec << " s";
 		} else {
-			if (usec >= 1000)
+			if (usec >= 1000) {
 				ss << usec / 1000 << " ms";
-			else {
+			} else {
 				ss << usec << " μs";
 				is_micro = true;
 			}
