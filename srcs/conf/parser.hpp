@@ -143,14 +143,9 @@ class Parser {
 			return CONF_EMPTY_TOKEN;
 		if (scope <= 0)
 			return CONF_ERRORENOUS_TOKEN;
-
 		if (line->size() == 1 && (*line)[0] == '}')
 			return CONF_BLOCK_CLOSING;
-
-		std::string tabs_key = line->substr(0, line->find("\t"));
-		std::string space_key = line->substr(0, line->find(" "));
-
-		return _resolve_keys(tabs_key, space_key);
+		return _resolve_keys(line->substr(0, line->find("\t")), line->substr(0, line->find(" ")));
 	}
 
 	int
@@ -190,6 +185,16 @@ class Parser {
 		bucket->erase(bucket->size() - 1, 1);
 	}
 
+	std::vector<std::string> *_split_string(const std::string &ref,
+		char delimiter, std::vector<std::string> *bucket) {
+		std::string s;
+		std::istringstream st(ref);
+
+		while (std::getline(st, s, delimiter))
+			bucket->push_back(s);
+		return bucket;
+	}
+
 	bool	_parse_configuration() {
 		std::string line;
 		std::stringstream	ss(_conf_file);
@@ -212,28 +217,27 @@ class Parser {
 				}
 				case CONF_SERVER_INDEX: {
 					_extract_value("index", &line);
-					while (line.find(" ") != std::string::npos) {
-						_servers.back()->add_index(line.substr(0, line.find(" ")));
-						line.erase(0, line.find(" ") + 1);
-						_skip_whitespaces(&line);
-					}
-					if (line.size() > 1)
-						_servers.back()->add_index(line);
+
+					std::vector<std::string> split;
+					_split_string(line, ' ', &split);
+
+					std::vector<std::string>::const_iterator it = split.begin();
+					for (; it != split.end(); it++)
+						_servers.back()->add_index(*it);
 					continue;
 				}
 				case CONF_BLOCK_ALLOWED_METHODS: {
 					_extract_value("allowed_methods", &line);
-					std::string method;
-					while (line.find(" ") != std::string::npos) {
-						method = line.substr(0, line.find(" "));
-						if (Models::get_method(method) == Models::METHOD_UNKNOWN)
-							return unknown_method_error(method);
-						_servers.back()->set_method(Models::get_method(method), true);
-						line.erase(0, line.find(" ") + 1);
+
+					std::vector<std::string> split;
+					_split_string(line, ' ', &split);
+
+					std::vector<std::string>::const_iterator it = split.begin();
+					for (; it != split.end(); it++) {
+						if (Models::get_method(*it) == Models::METHOD_UNKNOWN)
+							return unknown_method_error(*it);
+						_servers.back()->set_method(Models::get_method(*it), true);
 					}
-					if (Models::get_method(line) == Models::METHOD_UNKNOWN)
-							return unknown_method_error(line);
-					_servers.back()->set_method(Models::get_method(method), true);
 				}
 				default:
 					std::cout << "tk: " << token << " | " << line << std::endl;
