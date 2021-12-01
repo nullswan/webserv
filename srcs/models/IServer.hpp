@@ -17,21 +17,27 @@
 
 namespace Webserv {
 namespace Models {
-class IServer : protected Webserv::Models::IBlock {
+class IServer : public Webserv::Models::IBlock {
  public:
 	typedef Webserv::Models::ILocation ILocation;
 
  protected:
-	const std::string _name;  // ToDo:: Verify default value
-	const std::string _host;  // ToDo: Verify default value
+	const std::string _name;
+	const std::string _host;
 
-	const int _port;  // ToDo: Verify default value
+	const int _port;
 
 	std::vector<std::string> _indexs;
 	std::map<std::string, ILocation *> _locations;
 	std::map<int, std::string> _error_pages;
 
  public:
+	IServer() : _name("_"), _host("0.0.0.0"), _port(8000) {
+		// in case we are super user we set the port to 80, as nginx does
+		if (getuid() == 0) {
+			const_cast<int&>(_port) = 80;
+		}
+	}
 	IServer(const std::string &name, const std::string &host, const int port)
 		: _name(name), _host(host),  _port(port) {}
 	IServer(const IServer &lhs)
@@ -59,6 +65,9 @@ class IServer : protected Webserv::Models::IBlock {
 	}
 	void	add_error_page(int code, const std::string &path) {
 		_error_pages.insert(std::pair<int, std::string>(code, path));
+	}
+	void	set_name(const std::string &name) {
+		const_cast<std::string&>(_name) = name;
 	}
 };
 }  // namespace Models
