@@ -22,7 +22,6 @@ class IBlock {
  protected:
 	std::string _root;
 
-	bool _have_redirection;
 	std::string _redirection;
 	int _redirection_code;
 
@@ -35,7 +34,6 @@ class IBlock {
  public:
 	IBlock()
 	: 	_root(""),
-		_have_redirection(false),
 		_redirection(""),
 		_body_limit(1000000),
 		_autoindex(false) {
@@ -51,7 +49,6 @@ class IBlock {
 	void set_body_limit(size_t limit) { _body_limit = limit; }
 	void set_root(const std::string& root) { _root = root; }
 	void set_redirection(const std::string& redirection, const int code) {
-		_have_redirection = true;
 		_redirection = redirection;
 		_redirection_code = code;
 	}
@@ -62,7 +59,6 @@ class IBlock {
 	bool get_method(EMethods method) const {
 		return _methods_allowed[method];
 	}
-	bool have_redirection() const { return _have_redirection; }
 	size_t get_body_limit() const { return _body_limit; }
 	std::string get_root() const { return _root; }
 	std::string get_redirection() const { return _redirection; }
