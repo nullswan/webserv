@@ -8,7 +8,8 @@ namespace Webserv {
 namespace Conf {
 
 bool	unexpected_token_line_error(const std::string &token, const int &line) {
-	std::cerr << "unexpected token '" << token << "' at line " << line << std::endl;
+	std::cerr << "unexpected token '" << token
+		<< "' at line " << line << std::endl;
 	return false;
 }
 
@@ -18,7 +19,8 @@ bool	cannot_open_error(const std::string &file) {
 }
 
 bool	insufficient_permission_error(const std::string &file) {
-	std::cerr << "insufficient permission to open file '" << file << "'" << std::endl;
+	std::cerr << "insufficient permission to open file '"
+		<< file << "'" << std::endl;
 	return false;
 }
 
@@ -33,7 +35,8 @@ bool	file_is_directory_error(const std::string &file) {
 }
 
 bool	config_file_extension_error(const std::string &file) {
-	std::cerr << "file '" << file << "' has an invalid extension: must endswith .conf" << std::endl;
+	std::cerr << "file '" << file
+		<< "' has an invalid extension: must endswith .conf" << std::endl;
 	return false;
 }
 

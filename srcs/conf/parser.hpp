@@ -47,7 +47,7 @@ class Parser {
 
 	~Parser() { clear(); }
 
-	// ToDo: Must return false on duplicate or parsing error.
+	// ToDo: Must handle duplicate
 	bool	run(int ac, char **av) {
 		if (!_verify_arguments(ac, av))
 			return false;
@@ -88,7 +88,9 @@ class Parser {
 		}
 
 		_conf_file_path = av[1];
-		if (_conf_file_path.substr(_conf_file_path.size() - 5, _conf_file_path.size()) != ".conf")
+		if (_conf_file_path.substr(
+				_conf_file_path.size() - 5, _conf_file_path.size()
+			) != ".conf")
 			return config_file_extension_error(av[1]);
 
 		return _check_file_flags();
