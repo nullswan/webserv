@@ -28,41 +28,45 @@ class IBlock {
 
 	size_t _body_limit;
 	bool _methods_allowed[METHODS_TOTAL];
-	bool _autoindex;  // ToDo: Verify default value
+	bool _autoindex;
 
 	std::map<std::string, std::string> _cgi;
 
  public:
 	IBlock()
-	: _root(""), _have_redirection(false), _redirection(""), _body_limit(1000000) {
+	: 	_root(""), 
+		_have_redirection(false),
+		_redirection(""), 
+		_body_limit(1000000), 
+		_autoindex(false) {
 		for (int i = 0; i < METHODS_TOTAL; i++) {
 			_methods_allowed[i] = true;
 		}
 	}
 	~IBlock() {}
 
-	void setMethod(EMethods method, bool value) {
+	void set_method(EMethods method, bool value) {
 		_methods_allowed[method] = value;
 	}
-	void setBodyLimit(size_t limit) { _body_limit = limit; }
-	void setRoot(const std::string& root) { _root = root; }
-	void setRedirection(const std::string& redirection, const int code) {
+	void set_body_limit(size_t limit) { _body_limit = limit; }
+	void set_root(const std::string& root) { _root = root; }
+	void set_redirection(const std::string& redirection, const int code) {
 		_have_redirection = true;
 		_redirection = redirection;
 		_redirection_code = code;
 	}
-	void setCgi(const std::string& extension, const std::string& cgi_path) {
+	void set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
 	}
 
-	bool getMethod(EMethods method) const {
+	bool get_method(EMethods method) const {
 		return _methods_allowed[method];
 	}
-	bool haveRedirection() const { return _have_redirection; }
-	size_t getBodyLimit() const { return _body_limit; }
-	std::string getRoot() const { return _root; }
-	std::string getRedirection() const { return _redirection; }
-	const std::map<std::string, std::string>& getCgi() const {
+	bool have_redirection() const { return _have_redirection; }
+	size_t get_body_limit() const { return _body_limit; }
+	std::string get_root() const { return _root; }
+	std::string get_redirection() const { return _redirection; }
+	const std::map<std::string, std::string>& get_cgi() const {
 		return _cgi;
 	}
 };
