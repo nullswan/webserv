@@ -176,9 +176,15 @@ class Client {
 	}
 
 	std::string get_uri() const {
-		if (_last_request)
-			return _last_request->get_uri();
-		return "?";
+		if (_last_request) {
+			std::string uri = _last_request->get_uri();
+
+			if (uri.size() > 20)
+				return (uri.substr(0, 18) + "..");
+			uri.insert(uri.size(), 20 - uri.size(), ' ');
+			return uri;
+		}
+		return "?                   ";
 	}
 
 	const struct timeval *get_time() const {
@@ -204,6 +210,8 @@ class Client {
 		}
 
 		std::string str = ss.str();
+		if (str.size() > 9)
+			return "eternity.";
 		return str.insert(0, 9 - str.size(), ' ');
 	}
 };
