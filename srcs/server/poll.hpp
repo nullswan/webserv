@@ -199,7 +199,7 @@ class Poll {
 	void	_handle_stdin() {
 		std::string line;
 
-		#ifdef WEBSERV_BENCHMARK
+		#ifndef WEBSERV_BENCHMARK
 			if (!std::getline(std::cin, line) || line == "quit" || line == "exit") {
 				_alive = false;
 				std::cout << "Shutting down Webserv gracefully..." << std::endl;
