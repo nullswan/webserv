@@ -58,38 +58,10 @@ class Request {
 		if (_extract_http_version() == false)
 			return false;
 		_extract_headers(&_headers);
-		if (!_validate_host())
+		if (_validate_host() == false)
 			return false;
-		if (_method == Models::POST) {
-			const_iterator it = _headers.find("Transfer-Encoding");
-			if (it != _headers.end() &&
-				it->second.find("chunked") != std::string::npos) {
-				_chunked = true;
-			} else {
-				it = _headers.find("Content-Length");
-				if (it == _headers.end() || it->second == "") {
-					return _bad_request();
-				}
-				_body_size = static_cast<size_t>(atoi(it->second.c_str()));
-			}
-			it = _headers.find("Content-Type");
-			if (it == _headers.end() || it->second == "") {
-				return _bad_request();
-			}
-			if (it->second.find("application/x-www-form-urlencoded") == 0) {
-				_post_form = Models::URLENCODED;
-			} else if (it->second.find("multipart/form-data") == 0) {
-				_post_form = Models::MULTIPART;
-				size_t boundary_start = it->second.find("boundary");
-				if (boundary_start == std::string::npos) {
-					return _bad_request();
-				}
-				boundary_start += 9;
-				const size_t boundary_size = it->second.substr(boundary_start).find(" ");
-				_multipart_boundary = "--" + \
-					it->second.substr(boundary_start, boundary_size);
-			}
-		}
+		if (_method == Models::POST && _validate_post() == false)
+			return false;
 		_raw_request.erase(0, 2);
 		return true;
 	}
@@ -164,10 +136,8 @@ class Request {
 				std::cout << "\t\t" << it2->first << ": "
 					<< it2->second << ", " << std::endl;
 			}
-			std::cout << "\t}" << std::endl;
-		} else {
-			std::cout << "\t}" << std::endl;
 		}
+		std::cout << "\t}" << std::endl;
 		std::cout << "}" << std::endl;
 	}
 
@@ -176,7 +146,7 @@ class Request {
 		if (_raw_request.find("0\r\n\r\n") == std::string::npos) {
 			return Models::READ_WAIT;
 		} else {
-			std::string payload("");
+			std::string payload;
 			do {
 				const size_t header_end = _raw_request.find("\r\n");
 				if (header_end == std::string::npos) {
@@ -191,7 +161,6 @@ class Request {
 				}
 				payload += _raw_request.substr(0, chunk_size);
 				_raw_request.erase(0, chunk_size + 2);
-				return Models::READ_WAIT;
 			} while (true);
 		}
 	}
@@ -273,13 +242,13 @@ class Request {
 				_bad_request();
 				return;
 			}
-			size_t form_name_start = it->second.find("name");
+			const size_t form_name_start = it->second.find("name");
 			if (form_name_start == std::string::npos) {
 				_bad_request();
 				return;
 			}
 			std::string form_name = it->second.substr(form_name_start + 5);
-			size_t form_name_end = form_name.find(" ");
+			size_t form_name_end = form_name.find(";");
 			if (form_name_end != std::string::npos) {
 				form_name.erase(form_name_end);
 			}
@@ -297,12 +266,6 @@ class Request {
 		}
 	}
 
-	bool	_bad_request() {
-		std::cout << "Bad request" << std::endl;
-		_closed = true;
-		return false;
-	}
-
 	bool	_validate_host() {
 		if (_http_version == "HTTP/1.1") {
 			const_iterator it = _headers.find("Host");
@@ -311,6 +274,44 @@ class Request {
 			}
 		}
 		return true;
+	}
+
+	bool	_validate_post() {
+		const_iterator it = _headers.find("Transfer-Encoding");
+		if (it != _headers.end() &&
+			it->second.find("chunked") != std::string::npos) {
+			_chunked = true;
+		} else {
+			it = _headers.find("Content-Length");
+			if (it == _headers.end() || it->second == "") {
+				return _bad_request();
+			}
+			_body_size = static_cast<size_t>(atoi(it->second.c_str()));
+		}
+		it = _headers.find("Content-Type");
+		if (it == _headers.end() || it->second == "") {
+			return _bad_request();
+		}
+		if (it->second.find("application/x-www-form-urlencoded") == 0) {
+			_post_form = Models::URLENCODED;
+		} else if (it->second.find("multipart/form-data") == 0) {
+			_post_form = Models::MULTIPART;
+			size_t boundary_start = it->second.find("boundary");
+			if (boundary_start == std::string::npos) {
+				return _bad_request();
+			}
+			boundary_start += 9;
+			const size_t boundary_size = it->second.substr(boundary_start).find(" ");
+			_multipart_boundary = "--" + \
+				it->second.substr(boundary_start, boundary_size);
+		}
+		return true;
+	}
+
+	bool	_bad_request() {
+		std::cout << "Bad request" << std::endl;
+		_closed = true;
+		return false;
 	}
 
 	inline std::string* _rtrim(std::string* s, const char* t = " \t") {
