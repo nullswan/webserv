@@ -41,13 +41,24 @@ class IServer : public Webserv::Models::IBlock {
 			const_cast<int&>(_port) = 80;
 		}
 	}
+
 	IServer(const std::string &name, const std::string &host, const int port)
-		: _name(name), _host(host),  _port(port) {}
+	: _name(name), _host(host),  _port(port) {}
+
 	IServer(const IServer &lhs)
-		: _name(lhs._name), _host(lhs._host), _port(lhs._port),
-		  _indexs(lhs._indexs), _locations(lhs._locations),
-		  _error_pages(lhs._error_pages) {}
-	~IServer() {}
+	: _name(lhs._name), _host(lhs._host), _port(lhs._port),
+	_indexs(lhs._indexs), _error_pages(lhs._error_pages) {
+		std::map<std::string, ILocation *>::const_iterator it;
+		for (it = lhs._locations.begin(); it != lhs._locations.end(); ++it) {
+			_locations[it->first] = it->second->clone();
+		}
+	}
+
+	~IServer() {
+		std::map<std::string, ILocation *>::iterator it;
+		for (it = _locations.begin(); it != _locations.end(); it++)
+			delete it->second;
+	}
 
 	const std::string &get_name() const { return _name; }
 	const std::string &get_host() const { return _host; }

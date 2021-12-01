@@ -12,6 +12,15 @@
 namespace Webserv {
 namespace Models {
 class ILocation : public Webserv::Models::IBlock {
+ public:
+	ILocation() {}
+
+	ILocation(const ILocation &ref)
+	: IBlock(ref) {}
+
+	ILocation *clone() {
+		return new ILocation(*this);
+	}
 };
 }  // namespace Models
 }  // namespace Webserv
