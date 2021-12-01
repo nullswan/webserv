@@ -33,7 +33,10 @@ class IServer : public Webserv::Models::IBlock {
 
  public:
 	IServer() : _name("_"), _host("0.0.0.0"), _port(8000) {
-		// in case we are super user we set the port to 80, as nginx does
+		/*
+			in case we are super user 
+			we set the port to 80, as nginx does
+		*/
 		if (getuid() == 0) {
 			const_cast<int&>(_port) = 80;
 		}
