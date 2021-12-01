@@ -143,7 +143,7 @@ class Parser {
 			return CONF_EMPTY_TOKEN;
 		if (scope <= 0)
 			return CONF_ERRORENOUS_TOKEN;
-		if (line->size() == 1 && (*line)[0] == '}')
+		if ((*line)[0] == '}' && line->size() == 1)
 			return CONF_BLOCK_CLOSING;
 		return _resolve_keys(line->substr(0, line->find("\t")), line->substr(0, line->find(" ")));
 	}
@@ -153,7 +153,9 @@ class Parser {
 		int state = _resolve_key(first_key);
 		if (state != CONF_NOT_FOUND_TOKEN)
 			return state;
-		return _resolve_key(second_key);
+		if ((state = _resolve_key(second_key)) != CONF_NOT_FOUND_TOKEN)
+			return state;
+		return CONF_ERRORENOUS_TOKEN;
 	}
 
 	int _resolve_key(const std::string &key) {
@@ -175,10 +177,13 @@ class Parser {
 			s->erase(0, 1);
 	}
 
-	void _extract_value(const std::string &key, std::string *bucket) {
+	void _extract_value(const std::string &key, std::string *bucket,
+		bool inside_location_block) {
 		bucket->erase(0, key.size());
 		_skip_whitespaces(bucket);
-		if ((*bucket)[bucket->size() - 1] != ';') {
+
+		char	last_chr = (*bucket)[bucket->size() - 1];
+		if (last_chr != ';' && (inside_location_block && last_chr != '{')) {
 			invalid_delimiter_error(*bucket);
 			throw std::runtime_error("invalid delimiter");
 		}
@@ -199,6 +204,7 @@ class Parser {
 		std::string line;
 		std::stringstream	ss(_conf_file);
 
+		std::vector<ILocation *>	nested_locations;
 		int token = 0, scope = 0, line_count = 0;
 		while (std::getline(ss, line) && ++line_count) {
 			token = _resolve_line(&line, scope);
@@ -210,13 +216,19 @@ class Parser {
 					++scope;
 					continue;
 				}
+				// case CONF_ERRORENOUS_TOKEN:
+				// 	return false;
+				case CONF_BLOCK_CLOSING: {
+					--scope;
+					continue;
+				}
 				case CONF_SERVER_NAME: {
-					_extract_value("server_name", &line);
+					_extract_value("server_name", &line, false);
 					_servers.back()->set_name(line);
 					continue;
 				}
 				case CONF_SERVER_INDEX: {
-					_extract_value("index", &line);
+					_extract_value("index", &line, false);
 
 					std::vector<std::string> split;
 					_split_string(line, ' ', &split);
@@ -227,7 +239,7 @@ class Parser {
 					continue;
 				}
 				case CONF_BLOCK_ALLOWED_METHODS: {
-					_extract_value("allowed_methods", &line);
+					_extract_value("allowed_methods", &line, false);
 
 					std::vector<std::string> split;
 					_split_string(line, ' ', &split);
@@ -238,9 +250,11 @@ class Parser {
 							return unknown_method_error(*it);
 						_servers.back()->set_method(Models::get_method(*it), true);
 					}
+					continue;
 				}
 				default:
 					std::cout << "tk: " << token << " | " << line << std::endl;
+					continue;
 			}
 		}
 		return true;
