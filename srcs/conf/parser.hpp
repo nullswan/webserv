@@ -89,8 +89,7 @@ class Parser {
 
 		_conf_file_path = av[1];
 		if (_conf_file_path.substr(
-				_conf_file_path.size() - 5, _conf_file_path.size()
-			) != ".conf")
+			_conf_file_path.size() - 5, _conf_file_path.size()) != ".conf")
 			return config_file_extension_error(av[1]);
 
 		return _check_file_flags();
@@ -135,6 +134,7 @@ class Parser {
 		}
 		return false;
 	}
+
 	int	_resolve_line(std::string *line, const int &scope) {
 		if (line->substr(0, 8) == "server {")
 			return CONF_SERVER_OPENING;
@@ -153,14 +153,15 @@ class Parser {
 		return _resolve_keys(tabs_key, space_key);
 	}
 
-	int	_resolve_keys(const std::string &first_key, const std::string &second_key) {
+	int
+	_resolve_keys(const std::string &first_key, const std::string &second_key) {
 		int state = _resolve_key(first_key);
 		if (state != CONF_NOT_FOUND_TOKEN)
 			return state;
 		return _resolve_key(second_key);
 	}
 
-	int	_resolve_key(const std::string &key) {
+	int _resolve_key(const std::string &key) {
 		if (key == "server_name")
 			return CONF_SERVER_NAME;
 		if (key == "index")
