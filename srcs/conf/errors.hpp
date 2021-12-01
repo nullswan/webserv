@@ -1,6 +1,7 @@
 #ifndef CONF_ERRORS_HPP_
 #define CONF_ERRORS_HPP_
 
+#include <string>
 #include <iostream>
 
 namespace Webserv {
@@ -52,9 +53,9 @@ bool	use_default_configuration() {
 }
 
 bool	invalid_delimiter_error(const std::string &line) {
-	std::cout << "invalid delimiter: " 
-		<< line.substr(0, line.size() - 1) 
-		<< ">" << line.substr(line.size() - 1, line.size()) 
+	std::cout << "invalid delimiter: "
+		<< line.substr(0, line.size() - 1)
+		<< ">" << line.substr(line.size() - 1, line.size())
 		 << "<" << std::endl;
 	return false;
 }

@@ -24,7 +24,7 @@ enum	E_CONF_TOKEN : int {
 	CONF_TOKEN_MAX,
 };
 
-static const std::string DEFAULT_CONF_FILE = "server {\n"
+static const char DEFAULT_CONF_FILE[] = "server {\n"
 "	server_name	webserv;\n"
 "\n"
 "	index		index.html index.php;\n"

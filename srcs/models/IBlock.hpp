@@ -34,10 +34,10 @@ class IBlock {
 
  public:
 	IBlock()
-	: 	_root(""), 
+	: 	_root(""),
 		_have_redirection(false),
-		_redirection(""), 
-		_body_limit(1000000), 
+		_redirection(""),
+		_body_limit(1000000),
 		_autoindex(false) {
 		for (int i = 0; i < METHODS_TOTAL; i++) {
 			_methods_allowed[i] = true;
