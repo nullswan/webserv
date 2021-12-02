@@ -63,6 +63,7 @@ class Request {
 		if (_method == Models::POST && _validate_post() == false)
 			return false;
 		_raw_request.erase(0, 2);
+		_headers_ready = true;
 		return true;
 	}
 
@@ -83,12 +84,13 @@ class Request {
 			_extract_multipart();
 		}
 		_body_ready = true;
+		__repr__();
 		return true;
 	}
 
 	bool	closed() {
 		if (!_closed) {
-			const_iterator it = _headers.find("Connection");
+			const_iterator it = _headers.find("connection");
 			if (it != _headers.end()) {
 				if (it->second == "close") {
 					_closed = true;
@@ -113,7 +115,6 @@ class Request {
 	}
 	bool		get_header_status() const { return _headers_ready; }
 
-	void		set_header_status(bool status) { _headers_ready = status; }
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;
@@ -166,32 +167,35 @@ class Request {
 	}
 
 	bool	_extract_method() {
-		size_t	method_separator_pos = _raw_request.find(" ");
+		const size_t method_separator_pos = _raw_request.find(" ");
 		if (method_separator_pos == std::string::npos)
 			return _bad_request();
-
-		std::string	method_str = _raw_request.substr(0, method_separator_pos);
+		const std::string method_str = _raw_request.substr(0, method_separator_pos);
 		_method = Models::get_method(method_str);
 		_raw_request.erase(0, method_separator_pos + 1);
 		return true;
 	}
 
 	bool	_extract_uri() {
-		size_t	uri_separator_pos = _raw_request.find(" ");
+		const size_t uri_separator_pos = _raw_request.find(" ");
 		if (uri_separator_pos == std::string::npos)
 			return _bad_request();
-
 		_uri = _raw_request.substr(0, uri_separator_pos);
+		if (_uri == "")
+			return _bad_request();
+		_strtolower(&_uri);
 		_raw_request.erase(0, uri_separator_pos + 1);
 		return true;
 	}
 
 	bool	_extract_http_version() {
-		size_t	version_separator_pos = _raw_request.find("\r\n");
+		const size_t version_separator_pos = _raw_request.find("\r\n");
 		if (version_separator_pos == std::string::npos)
 			return _bad_request();
-
 		_http_version = _raw_request.substr(0, version_separator_pos);
+		if (_http_version == "")
+			return _bad_request();
+		_strtolower(&_http_version);
 		_raw_request.erase(0, version_separator_pos + 2);
 		return true;
 	}
@@ -205,6 +209,8 @@ class Request {
 				break;
 			std::string	header_name = header_str.substr(0, header_name_separator_pos);
 			std::string	header_value = header_str.substr(header_name_separator_pos + 1);
+			_strtolower(&header_name);
+			_strtolower(&header_value);
 			_trim(&header_value);
 			(*bucket)[header_name] = header_value;
 			_raw_request.erase(0, header_separator_pos + 2);
@@ -236,7 +242,7 @@ class Request {
 			std::map<std::string, std::string> boundary_headers;
 			_extract_headers(&boundary_headers);
 			_raw_request.erase(0, 2);
-			const_iterator it = boundary_headers.find("Content-Disposition");
+			const_iterator it = boundary_headers.find("content-disposition");
 			if (it == boundary_headers.end() || it->second == ""
 				|| it->second.find("form-data") == std::string::npos) {
 				_bad_request();
@@ -267,8 +273,8 @@ class Request {
 	}
 
 	bool	_validate_host() {
-		if (_http_version == "HTTP/1.1") {
-			const_iterator it = _headers.find("Host");
+		if (_http_version == "http/1.1") {
+			const_iterator it = _headers.find("host");
 			if (it == _headers.end() || it->second == "") {
 				return _bad_request();
 			}
@@ -277,18 +283,18 @@ class Request {
 	}
 
 	bool	_validate_post() {
-		const_iterator it = _headers.find("Transfer-Encoding");
+		const_iterator it = _headers.find("transfer-encoding");
 		if (it != _headers.end() &&
 			it->second.find("chunked") != std::string::npos) {
 			_chunked = true;
 		} else {
-			it = _headers.find("Content-Length");
+			it = _headers.find("content-length");
 			if (it == _headers.end() || it->second == "") {
 				return _bad_request();
 			}
 			_body_size = static_cast<size_t>(atoi(it->second.c_str()));
 		}
-		it = _headers.find("Content-Type");
+		it = _headers.find("content-type");
 		if (it == _headers.end() || it->second == "") {
 			return _bad_request();
 		}
@@ -314,17 +320,23 @@ class Request {
 		return false;
 	}
 
-	inline std::string* _rtrim(std::string* s, const char* t = " \t") {
+	inline std::string* _strtolower(std::string *s) {
+		for (std::string::iterator it = s->begin(); it != s->end(); it++)
+			*it = std::tolower(*it);
+		return s;
+	}
+
+	inline std::string* _rtrim(std::string *s, const char *t = " \t") {
 	    s->erase(s->find_last_not_of(t) + 1);
 	    return s;
 	}
 
-	inline std::string* _ltrim(std::string *s, const char* t = " \t") {
+	inline std::string* _ltrim(std::string *s, const char *t = " \t") {
 	    s->erase(0, s->find_first_not_of(t));
 	    return s;
 	}
 
-	inline std::string* _trim(std::string* s, const char* t = " \t") {
+	inline std::string* _trim(std::string *s, const char *t = " \t") {
 	    return _ltrim(_rtrim(s, t), t);
 	}
 };
