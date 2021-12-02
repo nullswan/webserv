@@ -16,6 +16,7 @@ class Request {
 	typedef Webserv::Models::EMethods							EMethod;
 	typedef Webserv::Models::EPostForm							EPostForm;
 	typedef Webserv::Models::ERead								ERead;
+	typedef Webserv::Models::ECode								ECode;
 
  private:
 	struct timeval _time;
@@ -37,6 +38,7 @@ class Request {
 	bool	_body_ready;
 	bool	_chunked;
 	bool	_closed;
+	ECode	_http_code;
 
  public:
 	explicit Request(std::string buffer) : _raw_request(buffer),
@@ -169,21 +171,25 @@ class Request {
 	bool	_extract_method() {
 		const size_t method_separator_pos = _raw_request.find(" ");
 		if (method_separator_pos == std::string::npos)
-			return _bad_request();
+			return _invalid_request(Models::BAD_REQUEST);
 		const std::string method_str = _raw_request.substr(0, method_separator_pos);
 		_method = Models::get_method(method_str);
+		if (_method == Models::METHOD_UNKNOWN)
+			return _invalid_request(Models::BAD_REQUEST);
 		_raw_request.erase(0, method_separator_pos + 1);
-		return true;
+		if (_method == Models::GET || _method == Models::POST || _method == Models::DELETE)
+			return true;
+		return _invalid_request(Models::NOT_IMPLEMENTED);
 	}
 
 	bool	_extract_uri() {
 		const size_t uri_separator_pos = _raw_request.find(" ");
 		if (uri_separator_pos == std::string::npos)
-			return _bad_request();
+			return _invalid_request(Models::BAD_REQUEST);
 		_uri = _raw_request.substr(0, uri_separator_pos);
-		if (_uri == "")
-			return _bad_request();
 		_strtolower(&_uri);
+		if (_uri == "" || _uri.find("/") != 0)
+			return _invalid_request(Models::BAD_REQUEST);
 		_raw_request.erase(0, uri_separator_pos + 1);
 		return true;
 	}
@@ -191,11 +197,16 @@ class Request {
 	bool	_extract_http_version() {
 		const size_t version_separator_pos = _raw_request.find("\r\n");
 		if (version_separator_pos == std::string::npos)
-			return _bad_request();
+			return _invalid_request(Models::BAD_REQUEST);
 		_http_version = _raw_request.substr(0, version_separator_pos);
-		if (_http_version == "")
-			return _bad_request();
 		_strtolower(&_http_version);
+		size_t version_start;
+		if (_http_version == "" || _http_version.find("http") != 0
+			|| (version_start = _http_version.find("/")) == std::string::npos)
+			return _invalid_request(Models::BAD_REQUEST);
+		_http_version = _http_version.substr(version_start + 1);
+		if (_http_version != "1.1")
+			return _invalid_request(Models::HTTP_VERSION_NOT_SUPPORTED);
 		_raw_request.erase(0, version_separator_pos + 2);
 		return true;
 	}
@@ -245,12 +256,12 @@ class Request {
 			const_iterator it = boundary_headers.find("content-disposition");
 			if (it == boundary_headers.end() || it->second == ""
 				|| it->second.find("form-data") == std::string::npos) {
-				_bad_request();
+				_invalid_request(Models::BAD_REQUEST);
 				return;
 			}
 			const size_t form_name_start = it->second.find("name");
 			if (form_name_start == std::string::npos) {
-				_bad_request();
+				_invalid_request(Models::BAD_REQUEST);
 				return;
 			}
 			std::string form_name = it->second.substr(form_name_start + 5);
@@ -261,7 +272,7 @@ class Request {
 			_trim(&form_name, "\"");
 			const size_t form_value_end = _raw_request.find(_multipart_boundary);
 			if (form_value_end == std::string::npos) {
-				_bad_request();
+				_invalid_request(Models::BAD_REQUEST);
 				return;
 			}
 			std::string form_value = _raw_request.substr(0, form_value_end);
@@ -273,11 +284,9 @@ class Request {
 	}
 
 	bool	_validate_host() {
-		if (_http_version == "http/1.1") {
-			const_iterator it = _headers.find("host");
-			if (it == _headers.end() || it->second == "") {
-				return _bad_request();
-			}
+		const_iterator it = _headers.find("host");
+		if (it == _headers.end() || it->second == "") {
+			return _invalid_request(Models::BAD_REQUEST);
 		}
 		return true;
 	}
@@ -290,13 +299,15 @@ class Request {
 		} else {
 			it = _headers.find("content-length");
 			if (it == _headers.end() || it->second == "") {
-				return _bad_request();
+				return _invalid_request(Models::BAD_REQUEST);
 			}
-			_body_size = static_cast<size_t>(atoi(it->second.c_str()));
+			_body_size = static_cast<size_t>(strtol(it->second.c_str(), NULL, 10));
+			if (_body_size > 10000000)
+				return _invalid_request(Models::PAYLOAD_TOO_LARGE);
 		}
 		it = _headers.find("content-type");
 		if (it == _headers.end() || it->second == "") {
-			return _bad_request();
+			return _invalid_request(Models::BAD_REQUEST);
 		}
 		if (it->second.find("application/x-www-form-urlencoded") == 0) {
 			_post_form = Models::URLENCODED;
@@ -304,7 +315,7 @@ class Request {
 			_post_form = Models::MULTIPART;
 			size_t boundary_start = it->second.find("boundary");
 			if (boundary_start == std::string::npos) {
-				return _bad_request();
+				return _invalid_request(Models::BAD_REQUEST);
 			}
 			boundary_start += 9;
 			const size_t boundary_size = it->second.substr(boundary_start).find(" ");
@@ -314,8 +325,16 @@ class Request {
 		return true;
 	}
 
-	bool	_bad_request() {
-		std::cout << "Bad request" << std::endl;
+	bool	_invalid_request(ECode http_code) {
+		if (http_code == Models::BAD_REQUEST)
+			std::cout << "Bad request" << std::endl;
+		else if (http_code == Models::PAYLOAD_TOO_LARGE)
+			std::cout << "Payload too large" << std::endl;
+		else if (http_code == Models::NOT_IMPLEMENTED)
+			std::cout << "Http method not implemented" << std::endl;
+		else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
+			std::cout << "Http version not supported" << std::endl;
+		_http_code = http_code;
 		_closed = true;
 		return false;
 	}
