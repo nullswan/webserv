@@ -21,15 +21,15 @@ class IBlock {
 
  protected:
 	std::string _root;
-
 	std::string _redirection;
-	int _redirection_code;
+	int			_redirection_code;
 
-	size_t _body_limit;
-	bool _methods_allowed[METHODS_TOTAL];
-	bool _autoindex;
+	size_t 		_body_limit;
 
-	std::map<std::string, std::string> _cgi;
+	bool 		_methods_allowed[METHODS_TOTAL];
+	bool 		_autoindex;
+
+	std::map<std::string, std::string>	_cgi;
 
  public:
 	IBlock()
@@ -43,25 +43,30 @@ class IBlock {
 	}
 	~IBlock() {}
 
-	void set_method(EMethods method, bool value) {
-		_methods_allowed[method] = value;
-	}
-	void set_body_limit(size_t limit) { _body_limit = limit; }
 	void set_root(const std::string& root) { _root = root; }
+	std::string get_root() const { return _root; }
+
 	void set_redirection(const std::string& redirection, const int code) {
 		_redirection = redirection;
 		_redirection_code = code;
 	}
+	std::string get_redirection() const { return _redirection; }
+	int get_redirection_code() const { return _redirection_code; }
+
+	void set_body_limit(size_t limit) { _body_limit = limit; }
+	size_t get_body_limit() const { return _body_limit; }
+
+	void set_method(EMethods method, bool value) {
+		_methods_allowed[method] = value;
+	}
+	bool get_method(EMethods method) const { return _methods_allowed[method]; }
+
+	void set_autoindex(bool value) { _autoindex = value; }
+	bool get_autoindex() const { return _autoindex; }
+
 	void set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
 	}
-
-	bool get_method(EMethods method) const {
-		return _methods_allowed[method];
-	}
-	size_t get_body_limit() const { return _body_limit; }
-	std::string get_root() const { return _root; }
-	std::string get_redirection() const { return _redirection; }
 	const std::map<std::string, std::string>& get_cgi() const {
 		return _cgi;
 	}
