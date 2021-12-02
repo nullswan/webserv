@@ -174,10 +174,12 @@ class Request {
 			return _invalid_request(Models::BAD_REQUEST);
 		const std::string method_str = _raw_request.substr(0, method_separator_pos);
 		_method = Models::get_method(method_str);
+		_raw_request.erase(0, method_separator_pos + 1);
 		if (_method == Models::METHOD_UNKNOWN)
 			return _invalid_request(Models::BAD_REQUEST);
-		_raw_request.erase(0, method_separator_pos + 1);
-		if (_method == Models::GET || _method == Models::POST || _method == Models::DELETE)
+		if (_method == Models::GET
+			|| _method == Models::POST
+			|| _method == Models::DELETE)
 			return true;
 		return _invalid_request(Models::NOT_IMPLEMENTED);
 	}
