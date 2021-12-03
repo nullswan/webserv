@@ -22,30 +22,32 @@ class IServer : public Webserv::Models::IBlock {
 	typedef Webserv::Models::ILocation ILocation;
 
  protected:
-	const std::string _name;
 	const std::string _host;
-
-	const int _port;
 
 	std::map<std::string, ILocation *> _locations;
 
  public:
-	IServer() : _name("_"), _host("0.0.0.0"), _port(8000) {
+	IServer() : _host("0.0.0.0") {
 		/*
 			in case we are super user 
 			we set the port to 80, as nginx does
 		*/
+		_port = 8000;
 		if (getuid() == 0)
 			set_port(80);
 	}
 
 	IServer(const std::string &name, const std::string &host, const int port)
-	: _name(name), _host(host),  _port(port) {}
+	:	_host(host) {
+		_name = name;
+		_port = port;
+	}
 
 	IServer(const IServer &lhs)
-	: 	_name(lhs._name),
-		_host(lhs._host),
-		_port(lhs._port) {
+	:	_host(lhs._host) {
+		_name = lhs._name;
+		_port = lhs._port;
+
 		std::map<std::string, ILocation *>::const_iterator it;
 		for (it = lhs._locations.begin(); it != lhs._locations.end(); ++it) {
 			_locations[it->first] = it->second->clone();
@@ -98,17 +100,24 @@ class IServer : public Webserv::Models::IBlock {
 		if (_locations.find(key) != _locations.end())
 			return 0;
 		ILocation *location = new ILocation(
+			_name, _port,
 			key,
 			_root,
 			_redirection, _redirection_code,
 			_body_limit,
 			_methods_allowed,
-			_autoindex,
-			_indexs,
+			_autoindex, _indexs,
 			_error_pages);
 
 		_locations.insert(std::pair<std::string, ILocation *>(key, location));
 		return location;
+	}
+
+	void	merge(IServer *lhs) {
+		std::map<std::string, ILocation *>::const_iterator it;
+		for (it = lhs->_locations.begin(); it != lhs->_locations.end(); ++it) {
+			_locations[it->first] = it->second->clone();
+		}
 	}
 };
 }  // namespace Models

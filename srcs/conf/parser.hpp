@@ -53,6 +53,7 @@ class Parser {
 		} catch (std::exception &e) {
 			return false;
 		}
+		_merge_duplicates();
 		return true;
 	}
 
@@ -72,6 +73,25 @@ class Parser {
 	}
 
  private:
+	void	_merge_duplicates() {
+		if (_servers.size() == 0)
+			return;
+
+		std::vector<IServer *>::iterator it = _servers.begin();
+		for (; it != _servers.end(); it++) {
+			std::vector<IServer *>::iterator it2 = it + 1;
+			for (; it2 != _servers.end(); it2++) {
+				if ((*it)->get_host() == (*it2)->get_host() &&
+					(*it)->get_port() == (*it2)->get_port()) {
+					(*it)->merge(*it2);
+					delete *it2;
+					_servers.erase(it2);
+					it2--;
+				}
+			}
+		}
+	}
+
 	bool	_default_configuration() {
 		no_config_file_error();
 		_conf_file = DEFAULT_CONF_FILE;
@@ -326,20 +346,26 @@ class Parser {
 						return invalid_value_error(line, line_nbr);
 					if (line.find(":") == std::string::npos) {
 						if (!_is_digits(line)) {
-							_servers.back()->set_host(line);
+							if (line == "*")
+								_servers.back()->set_host("0.0.0.0");
+							else
+								_servers.back()->set_host(line);
 							continue;
 						} else {
-							_servers.back()->set_host("*");
+							_servers.back()->set_host("0.0.0.0");
 							_servers.back()->set_port(atoi(line.c_str()));
 							continue;
 						}
 					} else {
 						if (line[0] == ':') {
-							_servers.back()->set_host("*");
+							_servers.back()->set_host("0.0.0.0");
 							_servers.back()->set_port(atoi(line.substr(1, line.size()).c_str()));
 							continue;
 						} else {
-							_servers.back()->set_host(line.substr(0, line.find(":")));
+							if (line.substr(0, line.find(":")) == "*")
+								_servers.back()->set_host("0.0.0.0");
+							else
+								_servers.back()->set_host(line.substr(0, line.find(":")));
 							_servers.back()->set_port(atoi(line.substr(
 								line.find(":") + 1, line.size()).c_str()));
 							continue;

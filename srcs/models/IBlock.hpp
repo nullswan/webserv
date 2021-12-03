@@ -20,6 +20,9 @@ class IBlock {
 	typedef Webserv::Models::EMethods EMethods;
 
  protected:
+	std::string _name;
+	int			_port;
+
 	std::string _root;
 	std::string _redirection;
 	int			_redirection_code;
@@ -43,31 +46,12 @@ class IBlock {
 			_methods_allowed[i] = true;
 		}
 	}
-	IBlock(const std::string &root, const std::string &redirection,
-		const int &redirection_code, const size_t &body_limit,
-		const bool method_allowed[METHODS_TOTAL],
-		const bool &autoindex,
-		const std::vector<std::string> &indexs,
-		const std::map<int, std::string> error_pages)
-	:	_root(root),
-		_redirection(redirection),
-		_redirection_code(redirection_code),
-		_body_limit(body_limit),
-		_autoindex(autoindex) {
-		for (int i = 0; i < METHODS_TOTAL; i++)
-			if (method_allowed[i])
-				_methods_allowed[i] = true;
-
-		std::vector<std::string>::const_iterator it = indexs.begin();
-		for (; it != indexs.end(); ++it)
-			_indexs.push_back(*it);
-
-		std::map<int, std::string>::const_iterator it2 = error_pages.begin();
-		for (; it2 != error_pages.end(); it++)
-			_error_pages[it2->first] = it2->second;
-	}
 
 	~IBlock() {}
+
+	// Name & Port
+	std::string	get_name() const { return _name; }
+	int			get_port() const { return _port; }
 
 	// Root
 	void set_root(const std::string& root) { _root = root; }
@@ -79,7 +63,7 @@ class IBlock {
 		_redirection_code = code;
 	}
 	std::string get_redirection() const { return _redirection; }
-	int get_redirection_code() const { return _redirection_code; }
+	int 		get_redirection_code() const { return _redirection_code; }
 
 	// Body Limit
 	void set_body_limit(size_t limit) { _body_limit = limit; }
