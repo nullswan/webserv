@@ -101,6 +101,8 @@ class Poll {
 		return (epoll_fd != -1);
 	}
 
+	// save duplicates host:ports to IServer.vhosts
+	// route when conencte
 	bool	_add_servers(const std::vector<IServer *> &servers) {
 		std::vector<IServer *>::const_iterator it = servers.begin();
 		for (; it != servers.end(); it++) {

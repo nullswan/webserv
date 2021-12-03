@@ -35,9 +35,8 @@ class IServer : public Webserv::Models::IBlock {
 			in case we are super user 
 			we set the port to 80, as nginx does
 		*/
-		if (getuid() == 0) {
+		if (getuid() == 0)
 			set_port(80);
-		}
 	}
 
 	IServer(const std::string &name, const std::string &host, const int port)

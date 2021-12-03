@@ -44,13 +44,11 @@ class Parser {
 	Parser() : _conf_file_path("") {}
 	~Parser() { clear(); }
 
-	// ToDo: Must handle duplicate
 	bool	run(int ac, char **av) {
 		if (!_verify_arguments(ac, av))
 			return false;
 		if (!_dump_configuration())
 			return false;
-
 		try {
 			if (!_parse_configuration())
 				return false;
@@ -201,9 +199,10 @@ class Parser {
 			throw std::runtime_error("invalid delimiter");
 		}
 		bucket->erase(bucket->size() - 1, 1);
-		if (bucket->find_first_of("\t-,;") != std::string::npos) {
-			invalid_delimiter_error(*bucket);
-			throw std::runtime_error("invalid delimiter");
+		if (bucket->find(';') != std::string::npos 
+		|| bucket->find(',') != std::string::npos) {
+			illegal_char_error(*bucket);
+			throw std::runtime_error("invalid char");
 		}
 	}
 
@@ -324,7 +323,6 @@ class Parser {
 					if (line.find(":") == std::string::npos) {
 						if (!_is_digits(line)) {
 							_servers.back()->set_host(line);
-							_servers.back()->set_port(80);
 							continue;
 						} else {
 							_servers.back()->set_host("*");

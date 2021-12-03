@@ -97,6 +97,11 @@ bool	not_implemented_method_error(const std::string &method) {
 	return false;
 }
 
+bool	illegal_char_error(const std::string &line) {
+	std::cerr << "illegal char in '" << line << "'" << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 
