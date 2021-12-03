@@ -83,3 +83,4 @@ nginx	:
 
 .PHONY	: push
 push	: lint tests
+		@ git push

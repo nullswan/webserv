@@ -199,7 +199,7 @@ class Parser {
 			throw std::runtime_error("invalid delimiter");
 		}
 		bucket->erase(bucket->size() - 1, 1);
-		if (bucket->find(';') != std::string::npos 
+		if (bucket->find(';') != std::string::npos
 		|| bucket->find(',') != std::string::npos) {
 			illegal_char_error(*bucket);
 			throw std::runtime_error("invalid char");
