@@ -316,6 +316,8 @@ class Parser {
 				}
 				case CONF_SERVER_LISTEN: {
 					_extract_value("listen", &line, false);
+					if (line.size() == 0)
+						return invalid_value_error(line, line_nbr);
 					if (line.find(":") == std::string::npos) {
 						if (!_is_digits(line)) {
 							_servers.back()->set_host(line);
@@ -358,6 +360,8 @@ class Parser {
 				}
 				case CONF_BLOCK_ROOT: {
 					_extract_value("root", &line, false);
+					if (line.size() == 0)
+						return invalid_value_error(line, line_nbr);
 					if (locations.size() == 0)
 						_servers.back()->set_root(line);
 					else

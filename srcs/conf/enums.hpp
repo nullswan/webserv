@@ -33,9 +33,6 @@ static const char DEFAULT_CONF_FILE[] = "server {\n"
 "		allowed_methods GET;\n"
 "	}\n"
 "\n"
-"	location /google {\n"
-"		redirect 301 http://google.fr/;\n"
-"	}\n"
 "}";
 
 }  // namespace Conf
