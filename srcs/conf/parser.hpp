@@ -41,14 +41,7 @@ class Parser {
 	std::string	_conf_file;
 
  public:
-	Parser() : _conf_file_path("") {
-		// (void)ac;
-		// (void)av;
-		// _servers.push_back(new IServer("local-net 1", "0.0.0.0", 8080));
-		// _servers.push_back(new IServer("local-net 2", "0.0.0.0", 8081));
-		// _servers.push_back(new IServer("local-net 3", "0.0.0.0", 8082));
-	}
-
+	Parser() : _conf_file_path("") {}
 	~Parser() { clear(); }
 
 	// ToDo: Must handle duplicate
@@ -139,17 +132,15 @@ class Parser {
 		return false;
 	}
 
-	int	_resolve_line(std::string *line, const int &scope) {
+	int	_resolve_line(std::string *line) {
 		if (line->substr(0, 8) == "server {")
 			return CONF_SERVER_OPENING;
 		_skip_whitespaces(line);
 		if (line->size() == 0)
 			return CONF_EMPTY_TOKEN;
-		if (scope <= 0)
-			return CONF_ERRORENOUS_TOKEN;
 		if ((*line)[0] == '}' && line->size() == 1)
 			return CONF_BLOCK_CLOSING;
-		return _resolve_keys(line->substr(0, line->find("\t")), 
+		return _resolve_keys(line->substr(0, line->find("\t")),
 			line->substr(0, line->find(" ")));
 	}
 
@@ -222,27 +213,64 @@ class Parser {
 		std::stringstream	ss(_conf_file);
 
 		std::vector<ILocation *>	locations;
-		int token = 0, scope = 0, line_count = 0;
-		while (std::getline(ss, line) && ++line_count) {
-			token = _resolve_line(&line, scope);
+		int token = 0, line_nbr = 0;
+		while (std::getline(ss, line) && ++line_nbr) {
+			token = _resolve_line(&line);
 			switch (token) {
-				case CONF_EMPTY_TOKEN:
-					continue;
-				case CONF_SERVER_OPENING: {
-					++scope;
-					_servers.push_back(new IServer());
+				case CONF_BLOCK_ALLOWED_METHODS: {
+					_extract_value("allowed_methods", &line, false);
+
+					std::vector<std::string> split;
+					_split_string(line, ' ', &split);
+
+					std::vector<std::string>::const_iterator it = split.begin();
+					for (; it != split.end(); it++) {
+						if (Models::get_method(*it) == Models::METHOD_UNKNOWN)
+							return unknown_method_error(*it);
+						if (locations.size() == 0)
+							_servers.back()->set_method(Models::get_method(*it), true);
+						else
+							locations.back()->set_method(Models::get_method(*it), true);
+					}
 					continue;
 				}
-				// case CONF_ERRORENOUS_TOKEN:
-				// 	return false;
-				case CONF_BLOCK_CLOSING: {
-					--scope;
+				case CONF_BLOCK_AUTOINDEX: {
+					_extract_value("autoindex", &line, false);
+					if (locations.size() == 0)
+						_servers.back()->set_autoindex(line == "on");
+					else
+						locations.back()->set_autoindex(line == "on");
 					continue;
 				}
-				case CONF_SERVER_NAME: {
-					_extract_value("server_name", &line, false);
-					_servers.back()->set_name(line);
+				case CONF_BLOCK_BODY_LIMIT: {
+					_extract_value("body_limit", &line, false);
+					if (locations.size() == 0)
+						_servers.back()->set_body_limit(atoi(line.c_str()));
+					else
+						locations.back()->set_body_limit(atoi(line.c_str()));
 					continue;
+				}
+				case CONF_BLOCK_CGI: {
+					_extract_value("cgi", &line, false);
+
+					std::string extension = line.substr(0, line.find(" "));
+					std::string cgi_path = line.substr(line.find(" ") + 1, line.size());
+					if (locations.size() == 0)
+						_servers.back()->set_cgi(extension, cgi_path);
+					else
+						locations.back()->set_cgi(extension, cgi_path);
+					continue;
+				}
+				case CONF_BLOCK_ERROR_PAGE: {
+					_extract_value("error_page", &line, false);
+
+					int error_code = atoi(line.substr(0, 3).c_str());
+					std::string page_path = line.substr(3, line.size());
+
+					if (locations.size() == 0)
+						_servers.back()->set_error_page(error_code, page_path);
+					else
+						locations.back()->set_error_page(error_code, page_path);
 				}
 				case CONF_SERVER_INDEX: {
 					_extract_value("index", &line, false);
@@ -255,18 +283,20 @@ class Parser {
 						_servers.back()->add_index(*it);
 					continue;
 				}
-				case CONF_BLOCK_ALLOWED_METHODS: {
-					_extract_value("allowed_methods", &line, false);
+				case CONF_SERVER_LOCATION: {
+					_extract_value("location", &line, true);
 
-					std::vector<std::string> split;
-					_split_string(line, ' ', &split);
+					ILocation *block = _servers.back()->new_location(line);
+					locations.push_back(block);
+					continue;
+				}
+				case CONF_SERVER_LISTEN: {
+					_extract_value("listen", &line, false);
 
-					std::vector<std::string>::const_iterator it = split.begin();
-					for (; it != split.end(); it++) {
-						if (Models::get_method(*it) == Models::METHOD_UNKNOWN)
-							return unknown_method_error(*it);
-						_servers.back()->set_method(Models::get_method(*it), true);
-					}
+					std::string host = line.substr(0, line.find(":"));
+					int port = atoi(line.substr(line.find(":") + 1, line.size()).c_str());
+					_servers.back()->set_host(host);
+					_servers.back()->set_port(port);
 					continue;
 				}
 				case CONF_BLOCK_REDIRECT: {
@@ -277,24 +307,40 @@ class Parser {
 						return invalid_http_code_error(status_code);
 
 					std::string url = line.erase(0, 4);
-					if (scope == 1)
+					if (locations.size() == 0)
 						_servers.back()->set_redirection(url, status_code);
 					else
 						locations.back()->set_redirection(url, status_code);
 					continue;
 				}
-				case CONF_SERVER_LOCATION: {
-					++scope;
-					_extract_value("location", &line, true);
-
-					ILocation *block = new ILocation();
-					_servers.back()->add_location(line, block);
-					locations.push_back(block);
+				case CONF_BLOCK_ROOT: {
+					_extract_value("root", &line, false);
+					if (locations.size() == 0)
+						_servers.back()->set_root(line);
+					else
+						locations.back()->set_root(line);
+					continue;
+				}
+				case CONF_SERVER_NAME: {
+					_extract_value("server_name", &line, false);
+					_servers.back()->set_name(line);
+					continue;
+				}
+				case CONF_EMPTY_TOKEN:
+					continue;
+				case CONF_SERVER_OPENING: {
+					_servers.push_back(new IServer());
+					continue;
+				}
+				case CONF_ERRORENOUS_TOKEN:
+					return errorneous_line_error(line, line_nbr);
+				case CONF_BLOCK_CLOSING: {
+					if (locations.size() > 0)
+						locations.pop_back();
 					continue;
 				}
 				default:
-					std::cout << "new_tk: " << token << " | " << line << std::endl;
-					continue;
+					return errorneous_line_error(line, line_nbr);
 			}
 		}
 		return true;
