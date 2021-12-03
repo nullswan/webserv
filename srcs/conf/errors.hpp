@@ -80,6 +80,12 @@ bool	invalid_http_code_error(const int &code) {
 	return false;
 }
 
+bool	invalid_value_error(const std::string &line, const int &line_nbr) {
+	std::cerr << "invalid value '" << line << "' at line "
+		<< line_nbr << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 

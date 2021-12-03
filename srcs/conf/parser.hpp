@@ -108,7 +108,6 @@ class Parser {
 	bool	_dump_configuration() {
 		if (_conf_file_path == "") {
 			_conf_file = DEFAULT_CONF_FILE;
-			std::cout << _conf_file << std::endl;
 			return true;
 		} else {
 			std::ifstream	fs;
@@ -121,7 +120,9 @@ class Parser {
 			int length = fs.tellg();
 			fs.seekg(0, fs.beg);
 
-			char *buffer = new char[length];
+			char *buffer = new char[length + 1];
+			for (int i = 0; i < length + 1; i++)
+				buffer[i] = 0;
 			fs.read(buffer, length);
 			_conf_file = buffer;
 
@@ -158,7 +159,7 @@ class Parser {
 		if (key == "allowed_methods")
 			return CONF_BLOCK_ALLOWED_METHODS;
 		if (key == "autoindex")
-			return CONF_SERVER_INDEX;
+			return CONF_BLOCK_AUTOINDEX;
 		if (key == "body_limit")
 			return CONF_BLOCK_BODY_LIMIT;
 		if (key == "cgi")
@@ -183,6 +184,10 @@ class Parser {
 	inline void	_skip_whitespaces(std::string *s) {
 		while ((*s)[0] == '\t' || (*s)[0] == ' ')
 			s->erase(0, 1);
+	}
+
+	bool _is_digits(const std::string &s) {
+		return s.find_first_not_of("0123456789") == std::string::npos;
 	}
 
 	void _extract_value(const std::string &key, std::string *bucket,
@@ -219,10 +224,8 @@ class Parser {
 			switch (token) {
 				case CONF_BLOCK_ALLOWED_METHODS: {
 					_extract_value("allowed_methods", &line, false);
-
 					std::vector<std::string> split;
 					_split_string(line, ' ', &split);
-
 					std::vector<std::string>::const_iterator it = split.begin();
 					for (; it != split.end(); it++) {
 						if (Models::get_method(*it) == Models::METHOD_UNKNOWN)
@@ -236,6 +239,8 @@ class Parser {
 				}
 				case CONF_BLOCK_AUTOINDEX: {
 					_extract_value("autoindex", &line, false);
+					if (line != "on" && line != "off")
+						return invalid_value_error(line, line_nbr);
 					if (locations.size() == 0)
 						_servers.back()->set_autoindex(line == "on");
 					else
@@ -244,6 +249,8 @@ class Parser {
 				}
 				case CONF_BLOCK_BODY_LIMIT: {
 					_extract_value("body_limit", &line, false);
+					if (!_is_digits(line))
+						return invalid_value_error(line, line_nbr);
 					if (locations.size() == 0)
 						_servers.back()->set_body_limit(atoi(line.c_str()));
 					else
@@ -252,7 +259,8 @@ class Parser {
 				}
 				case CONF_BLOCK_CGI: {
 					_extract_value("cgi", &line, false);
-
+					if (line.find(" ") == std::string::npos)
+						return invalid_value_error(line, line_nbr);
 					std::string extension = line.substr(0, line.find(" "));
 					std::string cgi_path = line.substr(line.find(" ") + 1, line.size());
 					if (locations.size() == 0)
@@ -263,10 +271,13 @@ class Parser {
 				}
 				case CONF_BLOCK_ERROR_PAGE: {
 					_extract_value("error_page", &line, false);
-
-					int error_code = atoi(line.substr(0, 3).c_str());
-					std::string page_path = line.substr(3, line.size());
-
+					if (line.size() < 6 
+						|| !_is_digits(line.substr(0, 3))
+						|| line.find(" ") == std::string::npos 
+						|| line.substr(0, line.find(" ")).size() != 3)
+						return invalid_value_error(line, line_nbr);
+					int error_code = atoi(line.substr(0, line.find(" ")).c_str());
+					std::string page_path = line.substr(line.find(" ") + 1, line.size());
 					if (locations.size() == 0)
 						_servers.back()->set_error_page(error_code, page_path);
 					else
@@ -286,6 +297,8 @@ class Parser {
 				case CONF_SERVER_LOCATION: {
 					_extract_value("location", &line, true);
 
+					if (line.size() < 1 || line[0] != '/')
+						return invalid_value_error(line, line_nbr);
 					ILocation *block = _servers.back()->new_location(line);
 					locations.push_back(block);
 					continue;
