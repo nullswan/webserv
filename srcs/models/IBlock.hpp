@@ -29,6 +29,7 @@ class IBlock {
 	bool 		_methods_allowed[METHODS_TOTAL];
 	bool 		_autoindex;
 
+	std::vector<std::string> _indexs;
 	std::map<int, std::string> _error_pages;
 	std::map<std::string, std::string>	_cgi;
 
@@ -46,6 +47,7 @@ class IBlock {
 		const int &redirection_code, const size_t &body_limit,
 		const bool method_allowed[METHODS_TOTAL],
 		const bool &autoindex,
+		const std::vector<std::string> &indexs,
 		const std::map<int, std::string> error_pages)
 	:	_root(root),
 		_redirection(redirection),
@@ -55,9 +57,14 @@ class IBlock {
 		for (int i = 0; i < METHODS_TOTAL; i++)
 			if (method_allowed[i])
 				_methods_allowed[i] = true;
-		std::map<int, std::string>::const_iterator it = error_pages.begin();
-		for (; it != error_pages.end(); it++)
-			_error_pages[it->first] = it->second;
+
+		std::vector<std::string>::const_iterator it = indexs.begin();
+		for (; it != indexs.end(); ++it)
+			_indexs.push_back(*it);
+		
+		std::map<int, std::string>::const_iterator it2 = error_pages.begin();
+		for (; it2 != error_pages.end(); it++)
+			_error_pages[it2->first] = it2->second;
 	}
 
 	~IBlock() {}

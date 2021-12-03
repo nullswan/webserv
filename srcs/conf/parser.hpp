@@ -167,7 +167,7 @@ class Parser {
 		if (key == "error_page")
 			return CONF_BLOCK_ERROR_PAGE;
 		if (key == "index")
-			return CONF_SERVER_INDEX;
+			return CONF_BLOCK_INDEX;
 		if (key == "location")
 			return CONF_SERVER_LOCATION;
 		if (key == "listen")
@@ -283,15 +283,19 @@ class Parser {
 					else
 						locations.back()->set_error_page(error_code, page_path);
 				}
-				case CONF_SERVER_INDEX: {
+				case CONF_BLOCK_INDEX: {
 					_extract_value("index", &line, false);
 
 					std::vector<std::string> split;
 					_split_string(line, ' ', &split);
 
+					if (split.size() == 0)
+						return invalid_value_error(line, line_nbr);
 					std::vector<std::string>::const_iterator it = split.begin();
-					for (; it != split.end(); it++)
-						_servers.back()->add_index(*it);
+					for (; it != split.end(); it++) {
+						if (it->size() > 0)
+							_servers.back()->add_index(*it);
+					}
 					continue;
 				}
 				case CONF_SERVER_LOCATION: {
@@ -299,6 +303,8 @@ class Parser {
 
 					if (line.size() < 1 || line[0] != '/')
 						return invalid_value_error(line, line_nbr);
+					if (line[line.size() - 1] == ' ')
+						line = line.substr(0, line.size() - 1);
 					ILocation *block = _servers.back()->new_location(line);
 					locations.push_back(block);
 					continue;

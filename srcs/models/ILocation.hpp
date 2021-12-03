@@ -16,19 +16,27 @@ namespace Webserv {
 namespace Models {
 
 class ILocation : public Webserv::Models::IBlock {
+ private:
+	const std::string	_path;
+
  public:
-	ILocation() {}
-	ILocation(const std::string &root,
+	explicit ILocation(std::string path) : _path(path) {}
+	ILocation(const std::string &path,
+		const std::string &root,
 		const std::string &redirection,
 		const int &redirection_code,
 		const size_t &body_limit,
 		const bool method_allowed[METHODS_TOTAL],
 		const bool &autoindex,
+		const std::vector<std::string> indexs,
 		const std::map<int, std::string> error_pages)
 	: IBlock(root, redirection, redirection_code,
-		body_limit, method_allowed, autoindex, error_pages) {}
+		body_limit, method_allowed, autoindex, indexs, error_pages),
+		_path(path) {}
 
 	ILocation *clone() { return new ILocation(*this); }
+
+	const std::string &get_path() const { return this->_path; }
 };
 }  // namespace Models
 }  // namespace Webserv

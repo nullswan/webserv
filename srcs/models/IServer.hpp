@@ -6,8 +6,8 @@
 #define MODELS_ISERVER_HPP_
 
 #include <map>
-#include <string>
 #include <vector>
+#include <string>
 #include <memory>
 #include <utility>
 
@@ -27,7 +27,6 @@ class IServer : public Webserv::Models::IBlock {
 
 	const int _port;
 
-	std::vector<std::string> _indexs;
 	std::map<std::string, ILocation *> _locations;
 
  public:
@@ -47,11 +46,25 @@ class IServer : public Webserv::Models::IBlock {
 	IServer(const IServer &lhs)
 	: 	_name(lhs._name),
 		_host(lhs._host),
-		_port(lhs._port),
-		_indexs(lhs._indexs) {
+		_port(lhs._port) {
 		std::map<std::string, ILocation *>::const_iterator it;
 		for (it = lhs._locations.begin(); it != lhs._locations.end(); ++it) {
 			_locations[it->first] = it->second->clone();
+		}
+
+		std::vector<std::string>::const_iterator it2;
+		for (it2 = lhs._indexs.begin(); it2 != lhs._indexs.end(); ++it2) {
+			_indexs.push_back(*it2);
+		}
+
+		std::map<int, std::string>::const_iterator it3;
+		for (it3 = lhs._error_pages.begin(); it3 != lhs._error_pages.end(); ++it3) {
+			_error_pages[it3->first] = it3->second;
+		}
+
+		std::map<std::string, std::string>::const_iterator it4;
+		for (it4 = lhs._cgi.begin(); it4 != lhs._cgi.end(); ++it4) {
+			_cgi[it4->first] = it4->second;
 		}
 	}
 
@@ -90,11 +103,13 @@ class IServer : public Webserv::Models::IBlock {
 	}
 	ILocation	*new_location(const std::string &key) {
 		ILocation *location = new ILocation(
+			key,
 			_root,
 			_redirection, _redirection_code,
 			_body_limit,
 			_methods_allowed,
 			_autoindex,
+			_indexs,
 			_error_pages);
 
 		_locations.insert(std::pair<std::string, ILocation *>(key, location));
