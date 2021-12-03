@@ -11,8 +11,25 @@ Server can contains specific name, host and port
 ```
 server {
 	server_name (IServer._name<std::string>)
-	host (IServer._host<std::string>));
-	port (IServer._port<int>);
+	listen		(IServer._host<std::string>):(IServer._port<int>);
+
+	// or
+
+	listen		:(IServer._port<int>);
+
+	// or
+
+	listen		(IServer._port<int>);
+
+	// or
+
+	listen		(IServer._host<std::string>);	// port 80 is used
+
+	/* 
+		If listen is not defined, *:80 is used 
+		if webserv runs with the superuser privileges, 
+		or *:8000 otherwise. 
+	*/
 }
 ```
 
@@ -32,13 +49,6 @@ server {
 }
 ```
 
-Server can contains different error pages to be rendered when a specific error occurs.
-```
-server {
-	error_page (IServer._error_pages<std::map<int, std::string>>);
-}
-```
-
 # Location Rules (ILocation)
 
 Define a location block, thus are mapped in IServer object.
@@ -54,6 +64,7 @@ server {
 # Shared Rules (IBlock)
 
 Server or Location can use autoindex, thus will list all files in the directory. In either way, this would return a 403.
+- Inheritance apply accros contexts
 ```
 server {
 	autoindex (IServer._autoindex<bool>);
@@ -65,6 +76,7 @@ server {
 ```
 
 Server and Location can serve file from a specific directory
+- Inheritance apply accros contexts
 ```
 server {
 	root (IServer.IBlock._root<std::string>);
@@ -87,6 +99,7 @@ server {
 ```
 
 Server and Location can specify a maximum size for the request body.
+- Inheritance apply accros contexts
 ```
 server {
 	body_limit (IServer.IBlock._body_limit<int>);
@@ -98,12 +111,25 @@ server {
 ```
 
 Server and Location can allow specific methods.
+- Inheritance apply accros contexts
 ```
 server {
 	allowed_methods (IServer.IBlock._allowed_methods<bool[]>);
 
 	location /example/ {
 		allowed_methods (ILocation.IBlock._allowed_methods<bool[]>);
+	}
+}
+```
+
+Server and location may contains different error pages to be rendered when a specific error occurs.
+- Inheritance apply accros contexts
+```
+server {
+	error_page (IServer.IBlock._error_pages<std::map<int, std::string>>);
+
+	location / {
+		error_page (ILocation.IBlock._error_pages<std::map<int, std::string>>);
 	}
 }
 ```

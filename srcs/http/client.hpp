@@ -194,24 +194,27 @@ class Client {
 
 	std::string	get_time_diff(struct timeval *ptr) const {
 		if (get_time() == 0)
-			return "-";
-		size_t usec = ptr->tv_usec - get_time()->tv_usec;
-		size_t sec = ptr->tv_sec - get_time()->tv_sec;
+			return "        - ";
+		size_t	usec = ptr->tv_usec - get_time()->tv_usec;
+		size_t	sec = ptr->tv_sec - get_time()->tv_sec;
+		bool	is_micro = false;
 		std::stringstream ss;
 
 		if (sec > 0) {
 			ss << sec << " s";
 		} else {
-			if (usec >= 1000)
+			if (usec >= 1000) {
 				ss << usec / 1000 << " ms";
-			else
+			} else {
 				ss << usec << " μs";
+				is_micro = true;
+			}
 		}
 
 		std::string str = ss.str();
-		if (str.size() > 9)
-			return "eternity.";
-		return str.insert(0, 9 - str.size(), ' ');
+		if (str.size() > 10)
+			return "eternity..";
+		return str.insert(0, (is_micro ? 11 : 10) - str.length(), ' ');
 	}
 };
 }  // namespace Http

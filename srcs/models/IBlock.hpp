@@ -20,49 +20,84 @@ class IBlock {
 	typedef Webserv::Models::EMethods EMethods;
 
  protected:
+	std::string _name;
+	int			_port;
+
 	std::string _root;
-
-	bool _have_redirection;
 	std::string _redirection;
-	int _redirection_code;
+	int			_redirection_code;
 
-	size_t _body_limit;
-	bool _methods_allowed[METHODS_TOTAL];
-	bool _autoindex;  // ToDo: Verify default value
+	size_t 		_body_limit;
 
-	std::map<std::string, std::string> _cgi;
+	bool 		_methods_allowed[METHODS_TOTAL];
+	bool 		_autoindex;
+
+	std::vector<std::string> _indexs;
+	std::map<int, std::string> _error_pages;
+	std::map<std::string, std::string>	_cgi;
 
  public:
 	IBlock()
-	: _root(""), _have_redirection(false), _redirection(""), _body_limit(1000000) {
+	: 	_root(""),
+		_redirection(""),
+		_body_limit(1000000),
+		_autoindex(false) {
 		for (int i = 0; i < METHODS_TOTAL; i++) {
 			_methods_allowed[i] = true;
 		}
 	}
+
 	~IBlock() {}
 
-	void setMethod(EMethods method, bool value) {
-		_methods_allowed[method] = value;
-	}
-	void setBodyLimit(size_t limit) { _body_limit = limit; }
-	void setRoot(const std::string& root) { _root = root; }
-	void setRedirection(const std::string& redirection, const int code) {
-		_have_redirection = true;
+	// Name & Port
+	std::string	get_name() const { return _name; }
+	int			get_port() const { return _port; }
+
+	// Root
+	void set_root(const std::string& root) { _root = root; }
+	std::string get_root() const { return _root; }
+
+	// Redirection, redirection_code
+	void set_redirection(const std::string& redirection, const int code) {
 		_redirection = redirection;
 		_redirection_code = code;
 	}
-	void setCgi(const std::string& extension, const std::string& cgi_path) {
-		_cgi[extension] = cgi_path;
+	std::string get_redirection() const { return _redirection; }
+	int 		get_redirection_code() const { return _redirection_code; }
+
+	// Body Limit
+	void set_body_limit(size_t limit) { _body_limit = limit; }
+	size_t get_body_limit() const { return _body_limit; }
+
+	// Allowed Methods
+	void set_method(EMethods method, bool value) {
+		_methods_allowed[method] = value;
+	}
+	bool get_method(EMethods method) const { return _methods_allowed[method]; }
+
+	// Autoindex
+	void set_autoindex(bool value) { _autoindex = value; }
+	bool get_autoindex() const { return _autoindex; }
+
+	// Index(s)
+	const std::vector<std::string> &get_indexs() const { return _indexs; }
+	void							add_index(const std::string &index) {
+		_indexs.push_back(index);
 	}
 
-	bool getMethod(EMethods method) const {
-		return _methods_allowed[method];
+	// Error Pages
+	const std::map<int, std::string> &get_error_pages() const {
+		return _error_pages;
 	}
-	bool haveRedirection() const { return _have_redirection; }
-	size_t getBodyLimit() const { return _body_limit; }
-	std::string getRoot() const { return _root; }
-	std::string getRedirection() const { return _redirection; }
-	const std::map<std::string, std::string>& getCgi() const {
+	void	set_error_page(int code, const std::string &source) {
+		_error_pages.insert(std::pair<int, std::string>(code, source));
+	}
+
+	// CGI
+	void set_cgi(const std::string& extension, const std::string& cgi_path) {
+		_cgi[extension] = cgi_path;
+	}
+	const std::map<std::string, std::string>& get_cgi() const {
 		return _cgi;
 	}
 };

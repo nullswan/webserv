@@ -1,6 +1,9 @@
 NAME	:= webserv
 CC		:= clang++
 
+BUILD_COMMIT 	:= $(shell git rev-parse --short HEAD)
+
+BFLAGS = -D BUILD_COMMIT=$(BUILD_COMMIT)
 CFLAGS	:= -Wall -Wextra -Werror -std=c++98
 OFLAGS  := -O3 -D WEBSERV_BENCHMARK=1
 DFLAGS	= -MMD -MF $(@:.o=.d)
@@ -22,18 +25,18 @@ all		: $(NAME)
 $(NAME)	: $(OBJS)
 	@	printf "Compiling $(NAME)\n"
 ifneq ($(MODE), benchmark)
-	@	$(CC) $(CFLAGS) $^ -o $@ -g3
+	@	$(CC) $(CFLAGS) $(BFLAGS) $^ -o $@ -g3
 else
-	@	$(CC) $(CFLAGS) $^ -o $@ $(OFLAGS)
+	@	$(CC) $(CFLAGS) $(BFLAGS) $^ -o $@ $(OFLAGS)
 endif
 
 $(OBJS_DIR)%.o : $(SRCS_DIR)%.cpp
 	@	mkdir -p $(dir $@)
 	@	printf "Compiling: $<"
 ifneq ($(MODE), benchmark)
-	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS) -g3
+	@	$(CC) $(CFLAGS) $(BFLAGS) -c $< -o $@ $(DFLAGS) -g3
 else
-	@	$(CC) $(CFLAGS) -c $< -o $@ $(DFLAGS) $(OFLAGS)
+	@	$(CC) $(CFLAGS) $(BFLAGS) -c $< -o $@ $(DFLAGS) $(OFLAGS)
 endif
 	@	printf " -> OK\n"
 
@@ -61,8 +64,7 @@ run		: all
 
 .PHONY	: tests
 tests	: re
-	@	printf "Tests not implemented\n"
-# @	./webserv
+	@	./tests/unit/run.sh
 
 .PHONY	: valgrind
 valgrind: all
@@ -81,3 +83,4 @@ nginx	:
 
 .PHONY	: push
 push	: lint tests
+		@ git push
