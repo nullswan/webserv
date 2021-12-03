@@ -1,6 +1,6 @@
 # https://github.com/cpplint/GitHub-Action-for-cpplint
 
-name: cpplint
+name: C++ Linting
 on: [push, pull_request]
 
 jobs:

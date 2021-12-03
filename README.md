@@ -1,19 +1,55 @@
+
 # webserv
 
-### - [ main ]
+School 42 Project - Rebuild a HTTP/1.1 resilient server.
 
-[![.github/workflows/unit_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml) <br />
-[![.github/workflows/cpplint.yml](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml) <br />
-[![.github/workflows/docs.yml](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml) <br />
-[![.github/workflows/stress_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml) <br />
 
-### - [ dev ]
 
-[![.github/workflows/unit_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml) <br />
-[![.github/workflows/cpplint.yml](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml) <br />
-[![.github/workflows/docs.yml](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml) <br />
-[![.github/workflows/stress_test.yml](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml/badge.svg?branch=dev)](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml) <br />
+## Authors
 
-### - Usefull links
+- [@c3b5aw](https://www.github.com/c3b5aw)
+- [@gmarcha](https://www.github.com/gmarcha)
 
-https://www.nginx.com/resources/wiki/start/topics/examples/full/
+
+## Build status
+
+[![Unit Test](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/unit_test.yml)
+[![Linting](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/cpplint.yml)
+[![Docs](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/docs.yml)
+[![Stress Test](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml/badge.svg?branch=main)](https://github.com/c3b5aw/webserv/actions/workflows/stress_test.yml)
+
+## Tech Stack
+
+**Core:** C++ / C
+
+**Tests:** Python
+
+
+## Features
+- Support HTTP/1.0 && HTTP/1.1
+- 100.00% availability using epoll()
+- (In progress) Support GET, POST, DELETE
+- Mimic official HTTP responses
+- Listen multiple ports
+- Fully configurable (view https://github.com/c3b5aw/webserv/blob/config/docs/config_file.md)
+- (In progress) Support Cookies and Session
+- (In progress) Support CGI
+
+## Optimizations
+
+```
+make MODE=benchmark
+```
+## Running Tests
+
+To run tests, run the following command
+
+```bash
+make tests
+```
+
+
+## Usefull Links
+
+- https://www.nginx.com/resources/wiki/start/topics/examples/full/
+- https://developer.mozilla.org/en-US/docs/Web/HTTP

@@ -16,6 +16,7 @@ class Request {
 	typedef Webserv::Models::EMethods							EMethod;
 	typedef Webserv::Models::EPostForm							EPostForm;
 	typedef Webserv::Models::ERead								ERead;
+	typedef Webserv::Models::ECode								ECode;
 
  private:
 	struct timeval _time;
@@ -37,6 +38,7 @@ class Request {
 	bool	_body_ready;
 	bool	_chunked;
 	bool	_closed;
+	ECode	_http_code;
 
  public:
 	explicit Request(std::string buffer) : _raw_request(buffer),
@@ -58,39 +60,12 @@ class Request {
 		if (_extract_http_version() == false)
 			return false;
 		_extract_headers(&_headers);
-		if (!_validate_host())
+		if (_validate_host() == false)
 			return false;
-		if (_method == Models::POST) {
-			const_iterator it = _headers.find("Transfer-Encoding");
-			if (it != _headers.end() &&
-				it->second.find("chunked") != std::string::npos) {
-				_chunked = true;
-			} else {
-				it = _headers.find("Content-Length");
-				if (it == _headers.end() || it->second == "") {
-					return _bad_request();
-				}
-				_body_size = static_cast<size_t>(atoi(it->second.c_str()));
-			}
-			it = _headers.find("Content-Type");
-			if (it == _headers.end() || it->second == "") {
-				return _bad_request();
-			}
-			if (it->second.find("application/x-www-form-urlencoded") == 0) {
-				_post_form = Models::URLENCODED;
-			} else if (it->second.find("multipart/form-data") == 0) {
-				_post_form = Models::MULTIPART;
-				size_t boundary_start = it->second.find("boundary");
-				if (boundary_start == std::string::npos) {
-					return _bad_request();
-				}
-				boundary_start += 9;
-				const size_t boundary_size = it->second.substr(boundary_start).find(" ");
-				_multipart_boundary = "--" + \
-					it->second.substr(boundary_start, boundary_size);
-			}
-		}
+		if (_method == Models::POST && _validate_post() == false)
+			return false;
 		_raw_request.erase(0, 2);
+		_headers_ready = true;
 		return true;
 	}
 
@@ -111,12 +86,13 @@ class Request {
 			_extract_multipart();
 		}
 		_body_ready = true;
+		__repr__();
 		return true;
 	}
 
 	bool	closed() {
 		if (!_closed) {
-			const_iterator it = _headers.find("Connection");
+			const_iterator it = _headers.find("connection");
 			if (it != _headers.end()) {
 				if (it->second == "close") {
 					_closed = true;
@@ -141,7 +117,6 @@ class Request {
 	}
 	bool		get_header_status() const { return _headers_ready; }
 
-	void		set_header_status(bool status) { _headers_ready = status; }
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;
@@ -164,10 +139,8 @@ class Request {
 				std::cout << "\t\t" << it2->first << ": "
 					<< it2->second << ", " << std::endl;
 			}
-			std::cout << "\t}" << std::endl;
-		} else {
-			std::cout << "\t}" << std::endl;
 		}
+		std::cout << "\t}" << std::endl;
 		std::cout << "}" << std::endl;
 	}
 
@@ -176,7 +149,7 @@ class Request {
 		if (_raw_request.find("0\r\n\r\n") == std::string::npos) {
 			return Models::READ_WAIT;
 		} else {
-			std::string payload("");
+			std::string payload;
 			do {
 				const size_t header_end = _raw_request.find("\r\n");
 				if (header_end == std::string::npos) {
@@ -191,38 +164,51 @@ class Request {
 				}
 				payload += _raw_request.substr(0, chunk_size);
 				_raw_request.erase(0, chunk_size + 2);
-				return Models::READ_WAIT;
 			} while (true);
 		}
 	}
 
 	bool	_extract_method() {
-		size_t	method_separator_pos = _raw_request.find(" ");
+		const size_t method_separator_pos = _raw_request.find(" ");
 		if (method_separator_pos == std::string::npos)
-			return _bad_request();
-
-		std::string	method_str = _raw_request.substr(0, method_separator_pos);
+			return _invalid_request(Models::BAD_REQUEST);
+		const std::string method_str = _raw_request.substr(0, method_separator_pos);
 		_method = Models::get_method(method_str);
 		_raw_request.erase(0, method_separator_pos + 1);
-		return true;
+		if (_method == Models::METHOD_UNKNOWN)
+			return _invalid_request(Models::BAD_REQUEST);
+		if (_method == Models::GET
+			|| _method == Models::POST
+			|| _method == Models::DELETE)
+			return true;
+		return _invalid_request(Models::NOT_IMPLEMENTED);
 	}
 
 	bool	_extract_uri() {
-		size_t	uri_separator_pos = _raw_request.find(" ");
+		const size_t uri_separator_pos = _raw_request.find(" ");
 		if (uri_separator_pos == std::string::npos)
-			return _bad_request();
-
+			return _invalid_request(Models::BAD_REQUEST);
 		_uri = _raw_request.substr(0, uri_separator_pos);
+		_strtolower(&_uri);
+		if (_uri == "" || _uri.find("/") != 0)
+			return _invalid_request(Models::BAD_REQUEST);
 		_raw_request.erase(0, uri_separator_pos + 1);
 		return true;
 	}
 
 	bool	_extract_http_version() {
-		size_t	version_separator_pos = _raw_request.find("\r\n");
+		const size_t version_separator_pos = _raw_request.find("\r\n");
 		if (version_separator_pos == std::string::npos)
-			return _bad_request();
-
+			return _invalid_request(Models::BAD_REQUEST);
 		_http_version = _raw_request.substr(0, version_separator_pos);
+		_strtolower(&_http_version);
+		size_t version_start;
+		if (_http_version == "" || _http_version.find("http") != 0
+			|| (version_start = _http_version.find("/")) == std::string::npos)
+			return _invalid_request(Models::BAD_REQUEST);
+		_http_version = _http_version.substr(version_start + 1);
+		if (_http_version != "1.1")
+			return _invalid_request(Models::HTTP_VERSION_NOT_SUPPORTED);
 		_raw_request.erase(0, version_separator_pos + 2);
 		return true;
 	}
@@ -236,6 +222,8 @@ class Request {
 				break;
 			std::string	header_name = header_str.substr(0, header_name_separator_pos);
 			std::string	header_value = header_str.substr(header_name_separator_pos + 1);
+			_strtolower(&header_name);
+			_strtolower(&header_value);
 			_trim(&header_value);
 			(*bucket)[header_name] = header_value;
 			_raw_request.erase(0, header_separator_pos + 2);
@@ -267,26 +255,26 @@ class Request {
 			std::map<std::string, std::string> boundary_headers;
 			_extract_headers(&boundary_headers);
 			_raw_request.erase(0, 2);
-			const_iterator it = boundary_headers.find("Content-Disposition");
+			const_iterator it = boundary_headers.find("content-disposition");
 			if (it == boundary_headers.end() || it->second == ""
 				|| it->second.find("form-data") == std::string::npos) {
-				_bad_request();
+				_invalid_request(Models::BAD_REQUEST);
 				return;
 			}
-			size_t form_name_start = it->second.find("name");
+			const size_t form_name_start = it->second.find("name");
 			if (form_name_start == std::string::npos) {
-				_bad_request();
+				_invalid_request(Models::BAD_REQUEST);
 				return;
 			}
 			std::string form_name = it->second.substr(form_name_start + 5);
-			size_t form_name_end = form_name.find(" ");
+			size_t form_name_end = form_name.find(";");
 			if (form_name_end != std::string::npos) {
 				form_name.erase(form_name_end);
 			}
 			_trim(&form_name, "\"");
 			const size_t form_value_end = _raw_request.find(_multipart_boundary);
 			if (form_value_end == std::string::npos) {
-				_bad_request();
+				_invalid_request(Models::BAD_REQUEST);
 				return;
 			}
 			std::string form_value = _raw_request.substr(0, form_value_end);
@@ -297,33 +285,79 @@ class Request {
 		}
 	}
 
-	bool	_bad_request() {
-		std::cout << "Bad request" << std::endl;
-		_closed = true;
-		return false;
-	}
-
 	bool	_validate_host() {
-		if (_http_version == "HTTP/1.1") {
-			const_iterator it = _headers.find("Host");
-			if (it == _headers.end() || it->second == "") {
-				return _bad_request();
-			}
+		const_iterator it = _headers.find("host");
+		if (it == _headers.end() || it->second == "") {
+			return _invalid_request(Models::BAD_REQUEST);
 		}
 		return true;
 	}
 
-	inline std::string* _rtrim(std::string* s, const char* t = " \t") {
+	bool	_validate_post() {
+		const_iterator it = _headers.find("transfer-encoding");
+		if (it != _headers.end() &&
+			it->second.find("chunked") != std::string::npos) {
+			_chunked = true;
+		} else {
+			it = _headers.find("content-length");
+			if (it == _headers.end() || it->second == "") {
+				return _invalid_request(Models::BAD_REQUEST);
+			}
+			_body_size = static_cast<size_t>(strtol(it->second.c_str(), NULL, 10));
+			if (_body_size > 10000000)
+				return _invalid_request(Models::PAYLOAD_TOO_LARGE);
+		}
+		it = _headers.find("content-type");
+		if (it == _headers.end() || it->second == "") {
+			return _invalid_request(Models::BAD_REQUEST);
+		}
+		if (it->second.find("application/x-www-form-urlencoded") == 0) {
+			_post_form = Models::URLENCODED;
+		} else if (it->second.find("multipart/form-data") == 0) {
+			_post_form = Models::MULTIPART;
+			size_t boundary_start = it->second.find("boundary");
+			if (boundary_start == std::string::npos) {
+				return _invalid_request(Models::BAD_REQUEST);
+			}
+			boundary_start += 9;
+			const size_t boundary_size = it->second.substr(boundary_start).find(" ");
+			_multipart_boundary = "--" + \
+				it->second.substr(boundary_start, boundary_size);
+		}
+		return true;
+	}
+
+	bool	_invalid_request(ECode http_code) {
+		if (http_code == Models::BAD_REQUEST)
+			std::cout << "Bad request" << std::endl;
+		else if (http_code == Models::PAYLOAD_TOO_LARGE)
+			std::cout << "Payload too large" << std::endl;
+		else if (http_code == Models::NOT_IMPLEMENTED)
+			std::cout << "Http method not implemented" << std::endl;
+		else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
+			std::cout << "Http version not supported" << std::endl;
+		_http_code = http_code;
+		_closed = true;
+		return false;
+	}
+
+	inline std::string* _strtolower(std::string *s) {
+		for (std::string::iterator it = s->begin(); it != s->end(); it++)
+			*it = std::tolower(*it);
+		return s;
+	}
+
+	inline std::string* _rtrim(std::string *s, const char *t = " \t") {
 	    s->erase(s->find_last_not_of(t) + 1);
 	    return s;
 	}
 
-	inline std::string* _ltrim(std::string *s, const char* t = " \t") {
+	inline std::string* _ltrim(std::string *s, const char *t = " \t") {
 	    s->erase(0, s->find_first_not_of(t));
 	    return s;
 	}
 
-	inline std::string* _trim(std::string* s, const char* t = " \t") {
+	inline std::string* _trim(std::string *s, const char *t = " \t") {
 	    return _ltrim(_rtrim(s, t), t);
 	}
 };

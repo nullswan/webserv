@@ -107,7 +107,6 @@ class Client {
 				if (_last_request->init() == false) {
 					return Models::READ_OK;
 				}
-				_last_request->set_header_status(true);
 			}
 			const EMethods method = _last_request->get_method();
 			if (method == Models::POST) {
