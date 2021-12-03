@@ -8,14 +8,14 @@ namespace Models {
 
 enum EMethods {
 	GET = 0,
-	HEAD,
+	// HEAD,
 	POST,
-	PUT,
+	// PUT,
 	DELETE,
-	CONNECT,
-	OPTIONS,
-	TRACE,
-	PATCH,
+	// CONNECT,
+	// OPTIONS,
+	// TRACE,
+	// PATCH,
 	METHODS_TOTAL,
 	METHOD_UNKNOWN
 };
