@@ -311,15 +311,34 @@ class Parser {
 				}
 				case CONF_SERVER_LISTEN: {
 					_extract_value("listen", &line, false);
-
-					std::string host = line.substr(0, line.find(":"));
-					int port = atoi(line.substr(line.find(":") + 1, line.size()).c_str());
-					_servers.back()->set_host(host);
-					_servers.back()->set_port(port);
-					continue;
+					if (line.find(":") == std::string::npos) {
+						if (!_is_digits(line)) {
+							_servers.back()->set_host(line);
+							_servers.back()->set_port(80);
+							continue;
+						} else {
+							_servers.back()->set_host("*");
+							_servers.back()->set_port(atoi(line.c_str()));
+							continue;
+						}
+					} else {
+						if (line[0] == ':') {
+							_servers.back()->set_host("*");
+							_servers.back()->set_port(atoi(line.substr(1, line.size()).c_str()));
+							continue;
+						} else {
+							_servers.back()->set_host(line.substr(0, line.find(":")));
+							_servers.back()->set_port(atoi(line.substr(line.find(":") + 1, line.size()).c_str()));
+							continue;
+						}
+					}
+					return invalid_value_error(line, line_nbr);
 				}
 				case CONF_BLOCK_REDIRECT: {
 					_extract_value("redirect", &line, false);
+
+					if (line.find(" ") == std::string::npos)
+						return invalid_value_error(line, line_nbr);
 
 					int	status_code = atoi(line.c_str());
 					if (status_code < 200 || status_code > 527)

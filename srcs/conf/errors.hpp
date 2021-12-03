@@ -76,7 +76,7 @@ bool	unknown_method_error(const std::string &method) {
 }
 
 bool	invalid_http_code_error(const int &code) {
-	std::cerr << code << " is invalid in HTTP/1.x" << std::endl;
+	std::cerr << "Code " << code << " is invalid in HTTP/1.x" << std::endl;
 	return false;
 }
 
