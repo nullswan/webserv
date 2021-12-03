@@ -315,6 +315,8 @@ class Parser {
 					if (line[line.size() - 1] == ' ')
 						line = line.substr(0, line.size() - 1);
 					ILocation *block = _servers.back()->new_location(line);
+					if (!block)
+						return invalid_value_error(line, line_nbr);
 					locations.push_back(block);
 					continue;
 				}

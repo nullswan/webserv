@@ -95,6 +95,8 @@ class IServer : public Webserv::Models::IBlock {
 		return _locations;
 	}
 	ILocation	*new_location(const std::string &key) {
+		if (_locations.find(key) != _locations.end())
+			return 0;
 		ILocation *location = new ILocation(
 			key,
 			_root,
