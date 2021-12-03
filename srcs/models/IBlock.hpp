@@ -29,6 +29,7 @@ class IBlock {
 	bool 		_methods_allowed[METHODS_TOTAL];
 	bool 		_autoindex;
 
+	std::map<int, std::string> _error_pages;
 	std::map<std::string, std::string>	_cgi;
 
  public:
@@ -41,11 +42,31 @@ class IBlock {
 			_methods_allowed[i] = true;
 		}
 	}
+	IBlock(const std::string &root, const std::string &redirection,
+		const int &redirection_code, const size_t &body_limit,
+		const bool method_allowed[METHODS_TOTAL],
+		const bool &autoindex,
+		const std::map<int, std::string> error_pages)
+	:	_root(root),
+		_redirection(redirection),
+		_redirection_code(redirection_code),
+		_body_limit(body_limit),
+		_autoindex(autoindex) {
+		for (int i = 0; i < METHODS_TOTAL; i++)
+			if (method_allowed[i])
+				_methods_allowed[i] = true;
+		std::map<int, std::string>::const_iterator it = error_pages.begin();
+		for (; it != error_pages.end(); it++)
+			_error_pages[it->first] = it->second;
+	}
+
 	~IBlock() {}
 
+	// Root
 	void set_root(const std::string& root) { _root = root; }
 	std::string get_root() const { return _root; }
 
+	// Redirection, redirection_code
 	void set_redirection(const std::string& redirection, const int code) {
 		_redirection = redirection;
 		_redirection_code = code;
@@ -53,17 +74,29 @@ class IBlock {
 	std::string get_redirection() const { return _redirection; }
 	int get_redirection_code() const { return _redirection_code; }
 
+	// Body Limit
 	void set_body_limit(size_t limit) { _body_limit = limit; }
 	size_t get_body_limit() const { return _body_limit; }
 
+	// Allowed Methods
 	void set_method(EMethods method, bool value) {
 		_methods_allowed[method] = value;
 	}
 	bool get_method(EMethods method) const { return _methods_allowed[method]; }
 
+	// Autoindex
 	void set_autoindex(bool value) { _autoindex = value; }
 	bool get_autoindex() const { return _autoindex; }
 
+	// Error Pages
+	const std::map<int, std::string> &get_error_pages() const {
+		return _error_pages;
+	}
+	void	set_error_page(int code, const std::string &path) {
+		_error_pages.insert(std::pair<int, std::string>(code, path));
+	}
+
+	// CGI
 	void set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
 	}
