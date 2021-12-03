@@ -1,4 +1,4 @@
-name: stress_test
+name: Stress Test
 on: [ push, pull_request ]
 
 jobs:
