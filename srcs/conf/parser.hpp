@@ -72,7 +72,6 @@ class Parser {
 	}
 
  private:
-
 	bool	_default_configuration() {
 		no_config_file_error();
 		_conf_file = DEFAULT_CONF_FILE;
