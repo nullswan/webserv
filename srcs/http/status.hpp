@@ -45,11 +45,34 @@ static std::map<int, std::string> http_code_list = {
 	{511, "Network Authentication Required"},
 };
 
-const std::string &resolve_code(const int &status_code) const {
+const std::string	&resolve_code(const int &status_code) {
 	std::map<int, std::string>::iterator it = http_code_list.find(status_code);
-	if (!it)
+	if (it == http_code_list.end())
 		return "Unknown error";
 	return it->second;
+}
+
+const std::string	&generate_status_page(const int &status_code) {
+	return "<!DOCTYPE html>"
+		"<html>"
+		"	<head>"
+		"		<style>"
+		"			html { color-scheme: light dark; }"
+		"			body { width: 35em; margin: 0 auto;"
+		"			font-family: Tahoma, Verdana, Arial, sans-serif; }"
+		"		</style>"
+		"		<title>" + status_code + " - " + resolve_code(status_code) + "</title>"
+		"	</head>"
+		"	<body>"
+		"		<h1>" + status_code + " - " + resolve_code(status_code) + "/h1>"
+		"		<hr />"
+		#ifdef BUILD_COMMIT
+		"		<p><em>Webserv@" + BUILD_COMMIT + "</em></p>"
+		#else
+		"		<p><em>Webserv</em></p>"
+		#endif
+		"	</body>"
+		"</html>";
 }
 
 }  // namespace Http
