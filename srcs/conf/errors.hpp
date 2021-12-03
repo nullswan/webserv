@@ -92,6 +92,11 @@ bool	invalid_scope_error(const std::string &line, const int &line_nbr) {
 	return false;
 }
 
+bool	not_implemented_method_error(const std::string &method) {
+	std::cerr << "method '" << method << "' is not implemented" << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 

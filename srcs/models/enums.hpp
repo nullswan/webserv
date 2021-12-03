@@ -8,14 +8,14 @@ namespace Models {
 
 enum EMethods {
 	GET = 0,
-	// HEAD,
+	HEAD,
 	POST,
-	// PUT,
+	PUT,
 	DELETE,
-	// CONNECT,
-	// OPTIONS,
-	// TRACE,
-	// PATCH,
+	CONNECT,
+	OPTIONS,
+	TRACE,
+	PATCH,
 	METHODS_TOTAL,
 	METHOD_UNKNOWN
 };
@@ -45,22 +45,22 @@ enum ECode {
 EMethods	get_method(const std::string& method) {
 	if (method == "GET")
 		return GET;
-	// else if (method == "HEAD")
-	// 	return HEAD;
+	else if (method == "HEAD")
+		return HEAD;
 	else if (method == "POST")
 		return POST;
-	// else if (method == "PUT")
-		// return PUT;
+	else if (method == "PUT")
+		return PUT;
 	else if (method == "DELETE")
 		return DELETE;
-	// else if (method == "CONNECT")
-		// return CONNECT;
-	// else if (method == "OPTIONS")
-	// 	return OPTIONS;
-	// else if (method == "TRACE")
-	// 	return TRACE;
-	// else if (method == "PATCH")
-	// 	return PATCH;
+	else if (method == "CONNECT")
+		return CONNECT;
+	else if (method == "OPTIONS")
+		return OPTIONS;
+	else if (method == "TRACE")
+		return TRACE;
+	else if (method == "PATCH")
+		return PATCH;
 	else
 		return METHOD_UNKNOWN;
 }

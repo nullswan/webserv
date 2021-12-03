@@ -232,8 +232,11 @@ class Parser {
 					_split_string(line, ' ', &split);
 					std::vector<std::string>::const_iterator it = split.begin();
 					for (; it != split.end(); it++) {
-						if (Models::get_method(*it) == Models::METHOD_UNKNOWN)
+						Models::EMethods m = Models::get_method(*it);
+						if (m == Models::METHOD_UNKNOWN)
 							return unknown_method_error(*it);
+						if (m != Models::GET && m != Models::POST && m != Models::DELETE)
+							return not_implemented_method_error(*it);
 						if (locations.size() == 0)
 							_servers.back()->set_method(Models::get_method(*it), true);
 						else
