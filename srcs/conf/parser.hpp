@@ -47,8 +47,6 @@ class Parser {
 	bool	run(int ac, char **av) {
 		if (!_verify_arguments(ac, av))
 			return false;
-		if (!_dump_configuration())
-			return false;
 		try {
 			if (!_parse_configuration())
 				return false;
@@ -74,61 +72,63 @@ class Parser {
 	}
 
  private:
+
+	bool	_default_configuration() {
+		no_config_file_error();
+		_conf_file = DEFAULT_CONF_FILE;
+		std::cout << "using default configuration file" << std::endl;
+		return true;
+	}
+
 	bool	_verify_arguments(int ac, char **av) {
 		if (ac >= 3)
 			return usage_error(av[0]);
-		if (ac == 1) {
-			no_config_file_error();
-			return use_default_configuration();
-		}
+		if (ac == 1)
+			return _default_configuration();
 
 		_conf_file_path = av[1];
 		if (_conf_file_path.substr(
 			_conf_file_path.size() - 5, _conf_file_path.size()) != ".conf")
 			return config_file_extension_error(av[1]);
 
-		return _check_file_flags();
+		return _dump_file(_conf_file_path, &_conf_file);
 	}
 
-	bool	_check_file_flags() {
+	bool	_check_file_flags(const std::string &path) {
 		struct stat buffer;
-		if (stat(_conf_file_path.c_str(), &buffer) != 0)
-			return file_not_found_error(_conf_file_path);
+		if (stat(path.c_str(), &buffer) != 0)
+			return file_not_found_error(path);
 		else if (buffer.st_mode & S_IFDIR)
-			return file_is_directory_error(_conf_file_path);
+			return file_is_directory_error(path);
 
-		if (access(_conf_file_path.c_str(), F_OK) == -1)
-			return insufficient_permission_error(_conf_file_path);
+		if (access(path.c_str(), F_OK) == -1)
+			return insufficient_permission_error(path);
 
 		return true;
 	}
 
-	bool	_dump_configuration() {
-		if (_conf_file_path == "") {
-			_conf_file = DEFAULT_CONF_FILE;
-			return true;
-		} else {
-			std::ifstream	fs;
+	bool	_dump_file(const std::string &file, std::string *bucket) {
+		std::ifstream	fs;
 
-			fs.open(_conf_file_path.c_str());
-			if (!fs || !fs.is_open())
-				return cannot_open_error(_conf_file_path);
+		if (!_check_file_flags(file))
+			return false;
+		fs.open(file.c_str());
+		if (!fs || !fs.is_open())
+			return cannot_open_error(_conf_file_path);
 
-			fs.seekg(0, fs.end);
-			int length = fs.tellg();
-			fs.seekg(0, fs.beg);
+		fs.seekg(0, fs.end);
+		int length = fs.tellg();
+		fs.seekg(0, fs.beg);
 
-			char *buffer = new char[length + 1];
-			for (int i = 0; i < length + 1; i++)
-				buffer[i] = 0;
-			fs.read(buffer, length);
-			_conf_file = buffer;
+		char *buffer = new char[length + 1];
+		for (int i = 0; i < length + 1; i++)
+			buffer[i] = 0;
+		fs.read(buffer, length);
 
-			fs.close();
-			delete []buffer;
-			return true;
-		}
-		return false;
+		fs.close();
+		(*bucket) = buffer;
+		delete[] buffer;
+		return true;
 	}
 
 	int	_resolve_line(std::string *line) {
@@ -284,10 +284,13 @@ class Parser {
 						return invalid_value_error(line, line_nbr);
 					int error_code = atoi(line.substr(0, line.find(" ")).c_str());
 					std::string page_path = line.substr(line.find(" ") + 1, line.size());
+					std::string source;
+					if (!_dump_file(page_path, &source))
+						return invalid_value_error(page_path, line_nbr);
 					if (locations.size() == 0)
-						_servers.back()->set_error_page(error_code, page_path);
+						_servers.back()->set_error_page(error_code, source);
 					else
-						locations.back()->set_error_page(error_code, page_path);
+						locations.back()->set_error_page(error_code, source);
 				}
 				case CONF_BLOCK_INDEX: {
 					_extract_value("index", &line, false);

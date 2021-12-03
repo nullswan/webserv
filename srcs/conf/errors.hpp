@@ -57,11 +57,6 @@ bool	no_config_file_error() {
 	return false;
 }
 
-bool	use_default_configuration() {
-	std::cout << "using default configuration file" << std::endl;
-	return true;
-}
-
 bool	invalid_delimiter_error(const std::string &line) {
 	std::cerr << "invalid delimiter: "
 		<< line.substr(0, line.size() - 1)

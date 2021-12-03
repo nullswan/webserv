@@ -99,8 +99,8 @@ class IBlock {
 	const std::map<int, std::string> &get_error_pages() const {
 		return _error_pages;
 	}
-	void	set_error_page(int code, const std::string &path) {
-		_error_pages.insert(std::pair<int, std::string>(code, path));
+	void	set_error_page(int code, const std::string &source) {
+		_error_pages.insert(std::pair<int, std::string>(code, source));
 	}
 
 	// CGI
