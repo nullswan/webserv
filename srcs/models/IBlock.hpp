@@ -61,7 +61,7 @@ class IBlock {
 		std::vector<std::string>::const_iterator it = indexs.begin();
 		for (; it != indexs.end(); ++it)
 			_indexs.push_back(*it);
-		
+
 		std::map<int, std::string>::const_iterator it2 = error_pages.begin();
 		for (; it2 != error_pages.end(); it++)
 			_error_pages[it2->first] = it2->second;

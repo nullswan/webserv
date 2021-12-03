@@ -275,9 +275,9 @@ class Parser {
 				}
 				case CONF_BLOCK_ERROR_PAGE: {
 					_extract_value("error_page", &line, false);
-					if (line.size() < 6 
+					if (line.size() < 6
 						|| !_is_digits(line.substr(0, 3))
-						|| line.find(" ") == std::string::npos 
+						|| line.find(" ") == std::string::npos
 						|| line.substr(0, line.find(" ")).size() != 3)
 						return invalid_value_error(line, line_nbr);
 					int error_code = atoi(line.substr(0, line.find(" ")).c_str());
@@ -335,7 +335,8 @@ class Parser {
 							continue;
 						} else {
 							_servers.back()->set_host(line.substr(0, line.find(":")));
-							_servers.back()->set_port(atoi(line.substr(line.find(":") + 1, line.size()).c_str()));
+							_servers.back()->set_port(atoi(line.substr(
+								line.find(":") + 1, line.size()).c_str()));
 							continue;
 						}
 					}
