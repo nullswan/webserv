@@ -95,6 +95,12 @@ class IBlock {
 	void set_autoindex(bool value) { _autoindex = value; }
 	bool get_autoindex() const { return _autoindex; }
 
+	// Index(s)
+	const std::vector<std::string> &get_indexs() const { return _indexs; }
+	void							add_index(const std::string &index) {
+		_indexs.push_back(index);
+	}
+
 	// Error Pages
 	const std::map<int, std::string> &get_error_pages() const {
 		return _error_pages;

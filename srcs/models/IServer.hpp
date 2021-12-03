@@ -90,12 +90,6 @@ class IServer : public Webserv::Models::IBlock {
 		const_cast<int&>(_port) = port;
 	}
 
-	// Index(s)
-	const std::vector<std::string> &get_indexs() const { return _indexs; }
-	void							add_index(const std::string &index) {
-		_indexs.push_back(index);
-	}
-
 	// Location(s)
 	const std::map<std::string, ILocation *> &get_locations() const {
 		return _locations;
