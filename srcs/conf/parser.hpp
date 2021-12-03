@@ -78,7 +78,7 @@ class Parser {
 		_servers.clear();
 	}
 
-	IServerList	&getServers() {
+	IServerList	&get_servers() {
 		return _servers;
 	}
 
@@ -171,9 +171,9 @@ class Parser {
 		if (key == "body_limit")
 			return CONF_BLOCK_BODY_LIMIT;
 		if (key == "cgi")
-			return CONF_BLOCK_CGI_PATH;
+			return CONF_BLOCK_CGI;
 		if (key == "error_page")
-			return CONF_SERVER_ERROR_PAGE;
+			return CONF_BLOCK_ERROR_PAGE;
 		if (key == "index")
 			return CONF_SERVER_INDEX;
 		if (key == "location")

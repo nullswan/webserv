@@ -7,9 +7,16 @@
 namespace Webserv {
 namespace Conf {
 
-bool	unexpected_token_line_error(const std::string &token, const int &line) {
+bool
+unexpected_token_line_error(const std::string &token, const int &line_nbr) {
 	std::cerr << "unexpected token '" << token
-		<< "' at line " << line << std::endl;
+		<< "' at line " << line_nbr << std::endl;
+	return false;
+}
+
+bool	errorneous_line_error(const std::string &line, const int &line_nbr) {
+	std::cerr << "unexpected sentence '" << line
+		<< "' at line " << line_nbr << std::endl;
 	return false;
 }
 
