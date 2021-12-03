@@ -14,8 +14,14 @@ def main() -> None:
 		process = subprocess.Popen([
 			get_cwd() + '/webserv', DIR + file
 		])
-		if (process.wait() != 1):
-			print("Error: " + file + " should have failed")
+
+		global TEST_FAILED
+		try:
+			if (process.wait(2) == 0):
+				print("Error: " + file + " should have failed")
+				TEST_FAILED += 1
+		except subprocess.TimeoutExpired:
+			print("Error: " + file + " timed out (mostly successed)")
 			TEST_FAILED += 1
 
 if __name__ == '__main__':
