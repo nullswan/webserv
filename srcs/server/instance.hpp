@@ -70,10 +70,7 @@ class Instance : public Webserv::Models::IServer {
 
 		addr.sin_family = AF_INET;
 		addr.sin_port = htons(_port);
-		if (_host.size() == 1 && _host[0] == '*')
-			addr.sin_addr.s_addr = INADDR_ANY;
-		else
-			addr.sin_addr.s_addr = inet_addr(_host.c_str());
+		addr.sin_addr.s_addr = inet_addr(_host.c_str());
 
 		if (bind(_fd, (struct sockaddr *)&addr, sizeof(addr)) == -1)
 			throw std::runtime_error("bind() failed");
