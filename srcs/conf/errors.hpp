@@ -86,6 +86,12 @@ bool	invalid_value_error(const std::string &line, const int &line_nbr) {
 	return false;
 }
 
+bool	invalid_scope_error(const std::string &line, const int &line_nbr) {
+	std::cerr << "out of scope '" << line << "' at line "
+		<< line_nbr << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 

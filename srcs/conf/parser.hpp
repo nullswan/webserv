@@ -201,6 +201,10 @@ class Parser {
 			throw std::runtime_error("invalid delimiter");
 		}
 		bucket->erase(bucket->size() - 1, 1);
+		if (bucket->find_first_of("\t-,;") != std::string::npos) {
+			invalid_delimiter_error(*bucket);
+			throw std::runtime_error("invalid delimiter");
+		}
 	}
 
 	std::vector<std::string> *_split_string(const std::string &ref,
@@ -218,7 +222,7 @@ class Parser {
 		std::stringstream	ss(_conf_file);
 
 		std::vector<ILocation *>	locations;
-		int token = 0, line_nbr = 0;
+		int token = 0, line_nbr = 0, scope = 0;
 		while (std::getline(ss, line) && ++line_nbr) {
 			token = _resolve_line(&line);
 			switch (token) {
@@ -299,6 +303,7 @@ class Parser {
 					continue;
 				}
 				case CONF_SERVER_LOCATION: {
+					++scope;
 					_extract_value("location", &line, true);
 
 					if (line.size() < 1 || line[0] != '/')
@@ -361,18 +366,25 @@ class Parser {
 				}
 				case CONF_SERVER_NAME: {
 					_extract_value("server_name", &line, false);
+
+					if (line.size() == 0)
+						return invalid_value_error(line, line_nbr);
 					_servers.back()->set_name(line);
 					continue;
 				}
 				case CONF_EMPTY_TOKEN:
 					continue;
 				case CONF_SERVER_OPENING: {
+					++scope;
 					_servers.push_back(new IServer());
 					continue;
 				}
 				case CONF_ERRORENOUS_TOKEN:
 					return errorneous_line_error(line, line_nbr);
 				case CONF_BLOCK_CLOSING: {
+					--scope;
+					if (scope < 0)
+						return invalid_scope_error(line, line_nbr);
 					if (locations.size() > 0)
 						locations.pop_back();
 					continue;
