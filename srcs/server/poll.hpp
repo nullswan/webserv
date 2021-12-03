@@ -37,14 +37,8 @@ class Poll {
 	std::map<int, Client *> _clients;
 
  public:
-	explicit Poll(const std::vector<IServer *> &servers) : _alive(true) {
-		if (!_create_poll())
-			throw std::runtime_error("Error while initializing epoll.");
-		if (!_add_servers(servers))
-			throw std::runtime_error("Error while adding servers to epoll.");
-		if (!_add_stdin())
-			throw std::runtime_error("Error while adding stdin to epoll.");
-	}
+	Poll()
+	: _alive(true) {}
 
 	~Poll() {
 		for (std::map<int, Instance *>::iterator it = _instances.begin();
@@ -55,6 +49,15 @@ class Poll {
 			it != _clients.end(); ++it)
 			delete it->second;
 		close(epoll_fd);
+	}
+
+	void	init(const std::vector<IServer *> &servers) {
+		if (!_create_poll())
+			throw std::runtime_error("Error while initializing epoll.");
+		if (!_add_servers(servers))
+			throw std::runtime_error("Error while adding servers to epoll.");
+		if (!_add_stdin())
+			throw std::runtime_error("Error while adding stdin to epoll.");
 	}
 
 	int	run() {
@@ -101,8 +104,12 @@ class Poll {
 	bool	_add_servers(const std::vector<IServer *> &servers) {
 		std::vector<IServer *>::const_iterator it = servers.begin();
 		for (; it != servers.end(); it++) {
-			if (!_add_server(*it))
+			if (!_add_server(*it)) {
+				std::cout << "unable to add " << (*it)->get_name()
+				<< " (" << (*it)->get_host() << ":" << (*it)->get_port() << ")"
+				<< std::endl;
 				return false;
+			}
 		}
 		return true;
 	}
