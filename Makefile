@@ -64,8 +64,7 @@ run		: all
 
 .PHONY	: tests
 tests	: re
-	@	printf "Tests not implemented\n"
-# @	./webserv
+	@	./tests/unit/run.sh
 
 .PHONY	: valgrind
 valgrind: all

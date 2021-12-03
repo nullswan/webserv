@@ -3,7 +3,7 @@ import sys
 import subprocess
 
 def	get_cwd():
-	return subprocess.check_output(['git', 'rev-parse', '--show-toplevel']).decode('ascii').strip()
+	return subprocess.check_output(['/usr/bin/git', 'rev-parse', '--show-toplevel']).decode('ascii').strip()
 
 DIR = get_cwd() + "/tests/configs/errors/"
 TEST_FAILED = 0
