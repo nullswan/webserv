@@ -21,6 +21,7 @@ class Response {
 
 	int _status;
 
+
  public:
 	Response() : _body(""), _status(200) {
 		_body = "Hello World!";

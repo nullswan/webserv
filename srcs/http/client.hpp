@@ -41,7 +41,7 @@ class Client {
 
  public:
 	Client(IServer *master, int ev_fd)
-	:	_master(master), 
+	:	_master(master),
 		_addr(), _addr_len(0),
 		_fd(-1) ,
 		req(0), resp(0) {
@@ -116,7 +116,7 @@ class Client {
 		} else {
 			if (header_status == false) {
 				if (req->init() == false) {
-					return Models::READ_OK; // do send error page ?
+					return Models::READ_OK;
 				}
 			}
 			const EMethods method = req->get_method();
