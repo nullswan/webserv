@@ -9,7 +9,6 @@
 
 #include "enums.hpp"
 #include "utils.hpp"
-// #include "../models/enums.hpp"
 
 namespace Webserv {
 namespace HTTP {

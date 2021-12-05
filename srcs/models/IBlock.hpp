@@ -44,7 +44,10 @@ class IBlock {
 		_upload_pass(""),
 		_redirection(""),
 		_body_limit(1000000),
-		_autoindex(false) {
+		_autoindex(false),
+		_indexs(),
+		_error_pages(),
+		_cgi() {
 		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++) {
 			_methods_allowed[i] = true;
 		}
@@ -112,8 +115,18 @@ class IBlock {
 	void			set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
 	}
-	const CGIObject &get_cgi() const {
+	const CGIObject &get_cgis() const {
 		return _cgi;
+	}
+	const std::string get_cgi(const std::string &uri) const {
+		const std::string ext = uri.find(".") != std::string::npos
+			? uri.substr(uri.find("."), uri.size()) : "";
+		if (ext == "")
+			return "";
+		CGIObject::const_iterator it = _cgi.find(ext);
+		if (it != _cgi.end())
+			return it->second;
+		return "";
 	}
 };
 }  // namespace Models

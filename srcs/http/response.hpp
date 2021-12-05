@@ -1,7 +1,10 @@
 #ifndef HTTP_RESPONSE_HPP_
 #define HTTP_RESPONSE_HPP_
 
+#include <unistd.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <map>
 #include <string>
@@ -31,7 +34,7 @@ class Response {
 	:	_status(request->get_code()), _req(request) {}
 
 	explicit Response(int code)
-	:	_status(code) {}
+	:	_status(code), _req(0) {}
 
 	bool	prepare(IServer *master) {
 		if (_req && _status < 400) { invoke(master); }
@@ -55,12 +58,59 @@ class Response {
 
  private:
 	void	invoke(IServer *master) {
-		(void)master;
-		// if (_req->get_method() == METH_GET)
-			// get correct vhosts and cast it the host
+		const Models::ILocation	*loc = master->get_location_using_vhosts(
+			_req->get_host(), _req->get_uri());
+
+		if (_req->get_method() == METH_GET) {
+			std::string cgi_path;
+			if (loc)
+				cgi_path = loc->get_cgi(_req->get_uri());
+			else
+				cgi_path = master->get_cgi(_req->get_uri());
+			if (cgi_path != "")
+				std::cout << "[deprecated] appears to be a cgi path" << std::endl;
+				// return _handle_cgi();
+
+			struct stat db;  // refer to man stat
+			std::string real_path;
+			if (!loc)
+				real_path = master->get_root();
+			else
+				real_path = loc->get_root();
+			real_path += _req->get_uri();
+			if (stat(real_path.c_str(), &db) == -1) {
+				_status = 404;
+				return;
+			}
+
+			switch (db.st_mode & S_IFMT) {
+				case S_IFDIR: {
+					std::cout << "is_dir" << std::endl;
+					// attempt index
+					// attempt autoindex
+					break;
+				}
+				case S_IFLNK: {
+					std::cout << "is_symlink" << std::endl;
+					// resolve
+					break;
+				}
+				case S_IFREG: {
+					std::cout << "is_file" << std::endl;
+					// stream
+					break;
+				}
+				default:
+					_status = 500;
+			}
+			_status = 404;
+		}
 		// else if (_req->get_method() == METH_POST)
 		// else if (_req->get_method() == METH_DELETE)
 		// else
+			// prob stand for request not allowed
+			// ie not authorized
+			// else 501
 	}
 
 	std::string _prepare_headers() {
