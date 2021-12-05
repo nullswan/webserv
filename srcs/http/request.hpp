@@ -7,31 +7,30 @@
 #include <string>
 #include <iostream>
 
-#include "../models/enums.hpp"
+#include "enums.hpp"
+#include "utils.hpp"
+// #include "../models/enums.hpp"
 
 namespace Webserv {
-namespace Http {
+namespace HTTP {
 class Request {
-	typedef std::map<std::string, std::string>::const_iterator	const_iterator;
-	typedef Webserv::Models::EMethods							EMethod;
-	typedef Webserv::Models::EPostForm							EPostForm;
-	typedef Webserv::Models::ERead								ERead;
-	typedef Webserv::Models::ECode								ECode;
+	typedef std::map<std::string, std::string> HeadersObject;
+	typedef std::map<std::string, std::string> FormObject;
 
  private:
 	struct timeval _time;
 
 	std::string	_raw_request;
 
-	EMethod		_method;
+	METHODS		_method;
 	std::string _host;
 	std::string	_uri;
 	std::string _http_version;
 
-	std::map<std::string, std::string>	_headers;
-	std::map<std::string, std::string>	_form;
+	HeadersObject	_headers;
+	FormObject		_form;
 
-	EPostForm	_post_form;
+	FORM		_post_form;
 	size_t		_body_size;
 	std::string	_multipart_boundary;
 
@@ -39,15 +38,23 @@ class Request {
 	bool	_body_ready;
 	bool	_chunked;
 	bool	_closed;
-	ECode	_http_code;
+
+	STATUS_CODE	_http_code;
 
  public:
-	explicit Request(std::string buffer) : _raw_request(buffer),
-		_method(Models::METHOD_UNKNOWN), _uri(""), _http_version(""),
+	explicit Request(std::string buffer)
+	:	_raw_request(buffer),
+		_method(METH_UNKNOWN),
+		_host(""), _uri(""),
+		 _http_version(""),
 		_headers(), _form(),
-		_post_form(Models::POST_FORM_UNKNOWN), _body_size(0), _multipart_boundary(""),
-		_headers_ready(false), _body_ready(false),
-		_chunked(false), _closed(false) {
+		_post_form(FORM_UNKNOWN),
+		_body_size(0),
+		_multipart_boundary(""),
+		_headers_ready(false),
+		 _body_ready(false),
+		_chunked(false), _closed(false),
+		_http_code(OK) {
 		gettimeofday(&_time, NULL);
 	}
 
@@ -60,12 +67,12 @@ class Request {
 			return false;
 		if (_extract_http_version() == false)
 			return false;
-		_extract_headers(&_headers);
+		if (_extract_headers(&_headers) == false)
+			return false;
 		if (_validate_host() == false)
 			return false;
-		if (_method == Models::POST && _validate_post() == false)
+		if (_method == METH_POST && _validate_post() == false)
 			return false;
-		_http_code = Models::NOT_FOUND;
 		_raw_request.erase(0, 2);
 		_headers_ready = true;
 		return true;
@@ -73,7 +80,7 @@ class Request {
 
 	bool	read_body() {
 		if (_chunked == true) {
-			if (_read_chunks() == Models::READ_WAIT) {
+			if (_read_chunks() == READ_WAIT) {
 				return false;
 			}
 			_body_size = _raw_request.size();
@@ -82,9 +89,9 @@ class Request {
 		if (_raw_request.size() < _body_size) {
 			return false;
 		}
-		if (_post_form == Models::URLENCODED) {
+		if (_post_form == FORM_URLENCODED) {
 			_extract_urlencoded();
-		} else if (_post_form == Models::MULTIPART) {
+		} else if (_post_form == FORM_MULTIPART) {
 			_extract_multipart();
 		}
 		_body_ready = true;
@@ -94,7 +101,7 @@ class Request {
 
 	bool	closed() {
 		if (!_closed) {
-			const_iterator it = _headers.find("connection");
+			HeadersObject::const_iterator it = _headers.find("connection");
 			if (it != _headers.end()) {
 				if (it->second == "close") {
 					_closed = true;
@@ -108,11 +115,11 @@ class Request {
 	const struct timeval *get_time() const { return &_time; }
 	int	get_code() const { return _http_code; }
 	const std::string get_raw_request() const { return _raw_request; }
-	EMethod		get_method() const { return _method; }
+	METHODS		get_method() const { return _method; }
 	const std::string get_uri() const { return _uri; }
 	const std::string get_host() const { return _host; }
 	const std::string get_header_value(const std::string &headerName) const {
-		const_iterator it = _headers.find(headerName);
+		HeadersObject::const_iterator it = _headers.find(headerName);
 		if (it == _headers.end()) {
 			return "";
 		} else {
@@ -124,21 +131,21 @@ class Request {
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;
-		std::cout << "\tmethod: " << Models::resolve_method(_method)
+		std::cout << "\tmethod: " << stringify_method(_method)
 			<< ", " << std::endl;
 		std::cout << "\turi: " << _uri << ", " << std::endl;
 		std::cout << "\thttp_version: " << _http_version << ", " << std::endl;
 		std::cout << "\theaders: {" << std::endl;
 
-		std::map<std::string, std::string>::iterator it;
+		HeadersObject::iterator it;
 		for (it = _headers.begin(); it != _headers.end(); it++) {
 			std::cout << "\t\t" << it->first << ": " << it->second << ", " << std::endl;
 		}
 
-		if (_method == Models::POST) {
+		if (_method == METH_POST) {
 			std::cout << "\t}," << std::endl;
 			std::cout << "\tform: {" << std::endl;
-			std::map<std::string, std::string>::iterator it2;
+			FormObject::iterator it2;
 			for (it2 = _form.begin(); it2 != _form.end(); it2++) {
 				std::cout << "\t\t" << it2->first << ": "
 					<< it2->second << ", " << std::endl;
@@ -152,22 +159,22 @@ class Request {
 	}
 
  private:
-	ERead	_read_chunks() {
+	READ	_read_chunks() {
 		if (_raw_request.find("0\r\n\r\n") == std::string::npos) {
-			return Models::READ_WAIT;
+			return READ_WAIT;
 		} else {
 			std::string payload;
 			do {
 				const size_t header_end = _raw_request.find("\r\n");
 				if (header_end == std::string::npos) {
-					return Models::READ_ERROR;
+					return READ_ERROR;
 				}
 				const int64_t chunk_size = strtol(
 						_raw_request.substr(0, header_end).c_str(), NULL, 16);
 				_raw_request.erase(0, header_end + 2);
 				if (chunk_size == 0) {
 					_raw_request = payload;
-					return Models::READ_OK;
+					return READ_OK;
 				}
 				payload += _raw_request.substr(0, chunk_size);
 				_raw_request.erase(0, chunk_size + 2);
@@ -178,27 +185,27 @@ class Request {
 	bool	_extract_method() {
 		const size_t method_separator_pos = _raw_request.find(" ");
 		if (method_separator_pos == std::string::npos)
-			return _invalid_request(Models::BAD_REQUEST);
-		const std::string method_str = _raw_request.substr(0, method_separator_pos);
-		_method = Models::get_method(method_str);
+			return _invalid_request(BAD_REQUEST);
+		_method = enumerate_method(_raw_request.substr(0, method_separator_pos));
 		_raw_request.erase(0, method_separator_pos + 1);
-		if (_method == Models::METHOD_UNKNOWN)
-			return _invalid_request(Models::BAD_REQUEST);
-		if (_method == Models::GET
-			|| _method == Models::POST
-			|| _method == Models::DELETE)
+		if (_method == METH_UNKNOWN)
+			return _invalid_request(BAD_REQUEST);
+		if (_method == METH_GET || _method == METH_POST
+			|| _method == METH_DELETE)
 			return true;
-		return _invalid_request(Models::NOT_IMPLEMENTED);
+		return _invalid_request(NOT_IMPLEMENTED);
 	}
 
 	bool	_extract_uri() {
 		const size_t uri_separator_pos = _raw_request.find(" ");
 		if (uri_separator_pos == std::string::npos)
-			return _invalid_request(Models::BAD_REQUEST);
+			return _invalid_request(BAD_REQUEST);
+		if (uri_separator_pos > 8192)
+			return _invalid_request(REQUEST_URI_TOO_LONG);
 		_uri = _raw_request.substr(0, uri_separator_pos);
 		_strtolower(&_uri);
 		if (_uri == "" || _uri.find("/") != 0)
-			return _invalid_request(Models::BAD_REQUEST);
+			return _invalid_request(BAD_REQUEST);
 		_raw_request.erase(0, uri_separator_pos + 1);
 		return true;
 	}
@@ -206,21 +213,22 @@ class Request {
 	bool	_extract_http_version() {
 		const size_t version_separator_pos = _raw_request.find("\r\n");
 		if (version_separator_pos == std::string::npos)
-			return _invalid_request(Models::BAD_REQUEST);
+			return _invalid_request(BAD_REQUEST);
 		_http_version = _raw_request.substr(0, version_separator_pos);
 		_strtolower(&_http_version);
 		size_t version_start;
 		if (_http_version == "" || _http_version.find("http") != 0
 			|| (version_start = _http_version.find("/")) == std::string::npos)
-			return _invalid_request(Models::BAD_REQUEST);
+			return _invalid_request(BAD_REQUEST);
 		_http_version = _http_version.substr(version_start + 1);
 		if (_http_version != "1.1")
-			return _invalid_request(Models::HTTP_VERSION_NOT_SUPPORTED);
+			return _invalid_request(HTTP_VERSION_NOT_SUPPORTED);
 		_raw_request.erase(0, version_separator_pos + 2);
 		return true;
 	}
 
-	void	_extract_headers(std::map<std::string, std::string> *bucket) {
+	bool	_extract_headers(HeadersObject *bucket) {
+		size_t header_size = 0;
 		size_t	header_separator_pos = _raw_request.find("\r\n");
 		while (header_separator_pos != std::string::npos) {
 			std::string	header_str = _raw_request.substr(0, header_separator_pos);
@@ -236,8 +244,12 @@ class Request {
 			if (header_name == "host")
 				_host = header_value;
 			_raw_request.erase(0, header_separator_pos + 2);
+			header_size += header_separator_pos + 2;
+			if (header_size > 16384)
+				return _invalid_request(REQUEST_HEADER_FIELDS_TOO_LARGE);
 			header_separator_pos = _raw_request.find("\r\n");
 		}
+		return true;
 	}
 
 	void	_extract_urlencoded() {
@@ -261,18 +273,20 @@ class Request {
 		size_t boundary = _raw_request.find(_multipart_boundary + "\r\n");
 		while (boundary != std::string::npos) {
 			_raw_request.erase(0, _multipart_boundary.size() + 2);
-			std::map<std::string, std::string> boundary_headers;
-			_extract_headers(&boundary_headers);
+			HeadersObject boundary_headers;
+			if (_extract_headers(&boundary_headers) == false)
+				return;
 			_raw_request.erase(0, 2);
-			const_iterator it = boundary_headers.find("content-disposition");
+			HeadersObject::const_iterator it = \
+				boundary_headers.find("content-disposition");
 			if (it == boundary_headers.end() || it->second == ""
 				|| it->second.find("form-data") == std::string::npos) {
-				_invalid_request(Models::BAD_REQUEST);
+				_invalid_request(BAD_REQUEST);
 				return;
 			}
 			const size_t form_name_start = it->second.find("name");
 			if (form_name_start == std::string::npos) {
-				_invalid_request(Models::BAD_REQUEST);
+				_invalid_request(BAD_REQUEST);
 				return;
 			}
 			std::string form_name = it->second.substr(form_name_start + 5);
@@ -283,7 +297,7 @@ class Request {
 			_trim(&form_name, "\"");
 			const size_t form_value_end = _raw_request.find(_multipart_boundary);
 			if (form_value_end == std::string::npos) {
-				_invalid_request(Models::BAD_REQUEST);
+				_invalid_request(BAD_REQUEST);
 				return;
 			}
 			std::string form_value = _raw_request.substr(0, form_value_end);
@@ -295,38 +309,38 @@ class Request {
 	}
 
 	bool	_validate_host() {
-		const_iterator it = _headers.find("host");
+		HeadersObject::const_iterator it = _headers.find("host");
 		if (it == _headers.end() || it->second == "") {
-			return _invalid_request(Models::BAD_REQUEST);
+			return _invalid_request(BAD_REQUEST);
 		}
 		return true;
 	}
 
 	bool	_validate_post() {
-		const_iterator it = _headers.find("transfer-encoding");
+		HeadersObject::const_iterator it = _headers.find("transfer-encoding");
 		if (it != _headers.end() &&
 			it->second.find("chunked") != std::string::npos) {
 			_chunked = true;
 		} else {
 			it = _headers.find("content-length");
 			if (it == _headers.end() || it->second == "") {
-				return _invalid_request(Models::BAD_REQUEST);
+				return _invalid_request(BAD_REQUEST);
 			}
 			_body_size = static_cast<size_t>(strtol(it->second.c_str(), NULL, 10));
 			if (_body_size > 10000000)
-				return _invalid_request(Models::PAYLOAD_TOO_LARGE);
+				return _invalid_request(REQUEST_ENTITY_TOO_LARGE);
 		}
 		it = _headers.find("content-type");
 		if (it == _headers.end() || it->second == "") {
-			return _invalid_request(Models::BAD_REQUEST);
+			return _invalid_request(BAD_REQUEST);
 		}
 		if (it->second.find("application/x-www-form-urlencoded") == 0) {
-			_post_form = Models::URLENCODED;
+			_post_form = FORM_URLENCODED;
 		} else if (it->second.find("multipart/form-data") == 0) {
-			_post_form = Models::MULTIPART;
+			_post_form = FORM_MULTIPART;
 			size_t boundary_start = it->second.find("boundary");
 			if (boundary_start == std::string::npos) {
-				return _invalid_request(Models::BAD_REQUEST);
+				return _invalid_request(BAD_REQUEST);
 			}
 			boundary_start += 9;
 			const size_t boundary_size = it->second.substr(boundary_start).find(" ");
@@ -336,14 +350,14 @@ class Request {
 		return true;
 	}
 
-	bool	_invalid_request(ECode http_code) {
-		// if (http_code == Models::BAD_REQUEST)
+	bool	_invalid_request(STATUS_CODE http_code) {
+		// if (http_code == BAD_REQUEST)
 		// 	std::cout << "Bad request" << std::endl;
-		// else if (http_code == Models::PAYLOAD_TOO_LARGE)
+		// else if (http_code == PAYLOAD_TOO_LARGE)
 		// 	std::cout << "Payload too large" << std::endl;
-		// else if (http_code == Models::NOT_IMPLEMENTED)
+		// else if (http_code == NOT_IMPLEMENTED)
 		// 	std::cout << "Http method not implemented" << std::endl;
-		// else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
+		// else if (http_code == HTTP_VERSION_NOT_SUPPORTED)
 		// 	std::cout << "Http version not supported" << std::endl;
 		_http_code = http_code;
 		_closed = true;
@@ -370,7 +384,7 @@ class Request {
 	    return _ltrim(_rtrim(s, t), t);
 	}
 };
-}  // namespace Http
+}  // namespace HTTP
 }  // namespace Webserv
 
 #endif  // HTTP_REQUEST_HPP_

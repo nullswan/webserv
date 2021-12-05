@@ -23,6 +23,8 @@
 
 #include "enums.hpp"
 #include "errors.hpp"
+#include "../http/enums.hpp"
+#include "../http/utils.hpp"
 #include "../models/IServer.hpp"
 #include "../models/ILocation.hpp"
 
@@ -267,15 +269,15 @@ class Parser {
 					_split_string(line, ' ', &split);
 					std::vector<std::string>::const_iterator it = split.begin();
 					for (; it != split.end(); it++) {
-						Models::EMethods m = Models::get_method(*it);
-						if (m == Models::METHOD_UNKNOWN)
+						HTTP::METHODS m = HTTP::enumerate_method(*it);
+						if (m == HTTP::METH_UNKNOWN)
 							return unknown_method_error(*it);
-						if (m != Models::GET && m != Models::POST && m != Models::DELETE)
+						if (m != HTTP::METH_GET && m != HTTP::METH_POST && m != HTTP::METH_DELETE)
 							return not_implemented_method_error(*it);
 						if (locations.size() == 0)
-							_servers.back()->set_method(Models::get_method(*it), true);
+							_servers.back()->set_method(HTTP::enumerate_method(*it), true);
 						else
-							locations.back()->set_method(Models::get_method(*it), true);
+							locations.back()->set_method(HTTP::enumerate_method(*it), true);
 					}
 					continue;
 				}

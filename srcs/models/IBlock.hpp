@@ -11,14 +11,12 @@
 #include <string>
 #include <utility>
 
-#include "enums.hpp"
+#include "../consts.hpp"
 
 namespace Webserv {
 namespace Models {
 class IBlock {
  public:
-	typedef Webserv::Models::EMethods EMethods;
-
 	typedef std::map<int, std::string> 			ErrorPagesObject;
 	typedef std::map<std::string, std::string>	CGIObject;
 
@@ -33,7 +31,7 @@ class IBlock {
 
 	size_t 		_body_limit;
 
-	bool 		_methods_allowed[METHODS_TOTAL];
+	bool 		_methods_allowed[WEBSERV_METHODS_SUPPORTED];
 	bool 		_autoindex;
 
 	std::vector<std::string> _indexs;
@@ -47,7 +45,7 @@ class IBlock {
 		_redirection(""),
 		_body_limit(1000000),
 		_autoindex(false) {
-		for (int i = 0; i < METHODS_TOTAL; i++) {
+		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++) {
 			_methods_allowed[i] = true;
 		}
 	}
@@ -79,10 +77,12 @@ class IBlock {
 	size_t get_body_limit() const { return _body_limit; }
 
 	// Allowed Methods
-	void set_method(EMethods method, bool value) {
+	void set_method(HTTP::METHODS method, bool value) {
 		_methods_allowed[method] = value;
 	}
-	bool get_method(EMethods method) const { return _methods_allowed[method]; }
+	bool get_method(HTTP::METHODS method) const {
+		return _methods_allowed[method];
+	}
 
 	// Autoindex
 	void set_autoindex(bool value) { _autoindex = value; }

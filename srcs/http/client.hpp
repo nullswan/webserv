@@ -12,18 +12,16 @@
 #include <string>
 #include <sstream>
 
-#include "../consts.hpp"
+#include "enums.hpp"
 #include "request.hpp"
 #include "response.hpp"
+#include "../consts.hpp"
 #include "../models/IServer.hpp"
-#include "../models/enums.hpp"
 
 namespace Webserv {
-namespace Http {
+namespace HTTP {
 class Client {
-	typedef Webserv::Models::EMethods	EMethods;
-	typedef Webserv::Models::ERead	ERead;
-	typedef Webserv::Http::Request	Request;
+	typedef Webserv::HTTP::Request		Request;
 	typedef Webserv::Models::IServer	IServer;
 
  private:
@@ -66,13 +64,13 @@ class Client {
 			delete resp;
 	}
 
-	ERead read_request() {
+	READ read_request() {
 		char buffer[WEBSERV_REQUEST_BUFFER_SIZE + 1] = {0};
 		ssize_t n = recv(_fd, buffer, WEBSERV_REQUEST_BUFFER_SIZE, 0);
 		if (n == -1) {
-			return Models::READ_ERROR;
+			return READ_ERROR;
 		} else if (n == 0) {
-			return Models::READ_EOF;
+			return READ_EOF;
 		} else {
 			if (req == NULL) {
 				req = new Request(buffer);
@@ -108,25 +106,24 @@ class Client {
 	}
 
  private:
-	ERead	_request_status() {
+	READ	_request_status() {
 		bool header_status = req->get_header_status();
 		const std::string request = req->get_raw_request();
 		if (header_status == false && request.find("\r\n\r\n") == std::string::npos) {
-			return Models::READ_WAIT;
+			return READ_WAIT;
 		} else {
 			if (header_status == false) {
 				if (req->init() == false) {
-					return Models::READ_OK;
+					return READ_OK;
 				}
 			}
-			const EMethods method = req->get_method();
-			if (method == Models::POST) {
+			if (req->get_method() == METH_POST) {
 				if (req->read_body() == false) {
-					return Models::READ_WAIT;
+					return READ_WAIT;
 				}
-				return Models::READ_OK;
+				return READ_OK;
 			}
-			return Models::READ_OK;
+			return READ_OK;
 		}
 	}
 
@@ -172,14 +169,14 @@ class Client {
 
 	std::string	get_http_code() const {
 		if (resp)
-			return Models::resolve_decorated_http_code(resp->status());
+			return color_code((STATUS_CODE)resp->status());
 		return "?";
 	}
 
 	std::string	get_method() const {
 		if (req)
-			return Models::resolve_decorated_method(req->get_method());
-		return Models::resolve_decorated_method(Models::METHOD_UNKNOWN);
+			return color_method(req->get_method());
+		return color_method(METH_UNKNOWN);
 	}
 
 	std::string get_uri() const {
@@ -225,7 +222,7 @@ class Client {
 		return str.insert(0, (is_micro ? 11 : 10) - str.length(), ' ');
 	}
 };
-}  // namespace Http
+}  // namespace HTTP
 }  // namespace Webserv
 
 #endif  // HTTP_CLIENT_HPP_
