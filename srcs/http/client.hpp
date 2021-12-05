@@ -12,11 +12,11 @@
 #include <string>
 #include <sstream>
 
+#include "../consts.hpp"
 #include "request.hpp"
 #include "response.hpp"
 #include "../models/IServer.hpp"
 #include "../models/enums.hpp"
-#include "../models/consts.hpp"
 
 namespace Webserv {
 namespace Http {
@@ -34,22 +34,24 @@ class Client {
 
 	std::string 	_ip;
 	int				_fd;
-	struct timeval 	_last_ping;
+	struct timeval 	ping;
 
-	Request		*_last_request;
-	Response	*_last_response;
+	Request		*req;
+	Response	*resp;
 
  public:
 	Client(IServer *master, int ev_fd)
-		: _master(master), _addr(), _addr_len(0), _fd(-1) ,
-		_last_request(0), _last_response(0) {
+	:	_master(master),
+		_addr(), _addr_len(0),
+		_fd(-1) ,
+		req(0), resp(0) {
 		_fd = accept(ev_fd, (struct sockaddr *)&_addr, &_addr_len);
 		if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1) {
 			close(_fd);
 			_fd = -1;
 			std::cerr << "fcntl() failed" << std::endl;
 		}
-		gettimeofday(&_last_ping, NULL);
+		gettimeofday(&ping, NULL);
 		#ifndef WEBSERV_BENCHMARK
 			_resolve_client_ip();
 		#endif
@@ -58,59 +60,68 @@ class Client {
 	~Client() {
 		if (_fd != -1)
 			close(_fd);
-		if (_last_request)
-			delete _last_request;
-		if (_last_response)
-			delete _last_response;
+		if (req)
+			delete req;
+		if (resp)
+			delete resp;
 	}
 
 	ERead read_request() {
-		char buffer[REQ_BUF_SIZE + 1] = {0};
-		ssize_t n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
+		char buffer[WEBSERV_REQUEST_BUFFER_SIZE + 1] = {0};
+		ssize_t n = recv(_fd, buffer, WEBSERV_REQUEST_BUFFER_SIZE, 0);
 		if (n == -1) {
 			return Models::READ_ERROR;
 		} else if (n == 0) {
 			return Models::READ_EOF;
 		} else {
-			if (_last_request == NULL) {
-				_last_request = new Request(buffer);
-				_last_ping = *(_last_request->get_time());
+			if (req == NULL) {
+				req = new Request(buffer);
+				ping = *(req->get_time());
 			} else {
-				_last_request->handle_buffer(buffer);
+				req->handle_buffer(buffer);
 			}
 			return _request_status();
 		}
 	}
 
+	void	abort(int code) {
+		if (resp)
+			delete resp;
+		resp = new Response(code);
+		resp->prepare(_master);
+
+		send(_fd, resp->toString(), resp->size(), 0);
+	}
+
 	bool	send_response() {
-		if (_last_response)
-			delete _last_response;
-		_last_response = new Response();
-		_last_response->prepare();
-		send(_fd, _last_response->toString(), _last_response->size(), 0);
+		if (resp)
+			delete resp;
+		resp = new Response(req);
+		resp->prepare(_master);
+		send(_fd, resp->toString(), resp->size(), 0);
 		return _close();
 	}
 
 	int	get_fd() const { return _fd; }
 	bool	is_expired(time_t now) const {
-		return (now - _last_ping.tv_sec) > TIMEOUT;
+		return (now - ping.tv_sec) > WEBSERV_CLIENT_TIMEOUT;
 	}
 
  private:
 	ERead	_request_status() {
-		bool header_status = _last_request->get_header_status();
-		const std::string request = _last_request->get_raw_request();
+		bool header_status = req->get_header_status();
+		const std::string request = req->get_raw_request();
 		if (header_status == false && request.find("\r\n\r\n") == std::string::npos) {
 			return Models::READ_WAIT;
 		} else {
 			if (header_status == false) {
-				if (_last_request->init() == false) {
+				if (req->init() == false) {
 					return Models::READ_OK;
 				}
 			}
-			const EMethods method = _last_request->get_method();
+			const EMethods method = req->get_method();
 			if (method == Models::POST) {
-				if (_last_request->read_body() == false) {
+				if (req->read_body() == false) {
 					return Models::READ_WAIT;
 				}
 				return Models::READ_OK;
@@ -120,13 +131,15 @@ class Client {
 	}
 
 	bool	_close() {
-		if (_last_request) {
-			bool state = _last_request->closed();
+		if (req) {
+			bool state = req->closed();
+
 			#ifndef WEBSERV_BENCHMARK
 				__log();
 			#endif
-			delete _last_request;
-			_last_request = NULL;
+
+			delete req;
+			req = NULL;
 			return state;
 		}
 		return true;
@@ -154,29 +167,24 @@ class Client {
 		_ip = inet_ntoa(_addr.sin_addr);
 	}
 
-	std::string	get_client_ip() const {
-		return _ip;
-	}
-
-	std::string get_master_ip() const {
-		return _master->get_ip();
-	}
+	const std::string	get_client_ip() const { return _ip; }
+	const std::string get_master_ip() const { return _master->get_ip(); }
 
 	std::string	get_http_code() const {
-		if (_last_response)
-			return Models::resolve_decorated_http_code(_last_response->get_http_code());
+		if (resp)
+			return Models::resolve_decorated_http_code(resp->status());
 		return "?";
 	}
 
 	std::string	get_method() const {
-		if (_last_request)
-			return Models::resolve_decorated_method(_last_request->get_method());
+		if (req)
+			return Models::resolve_decorated_method(req->get_method());
 		return Models::resolve_decorated_method(Models::METHOD_UNKNOWN);
 	}
 
 	std::string get_uri() const {
-		if (_last_request) {
-			std::string uri = _last_request->get_uri();
+		if (req) {
+			std::string uri = req->get_uri();
 
 			if (uri.size() > 20)
 				return (uri.substr(0, 18) + "..");
@@ -187,8 +195,8 @@ class Client {
 	}
 
 	const struct timeval *get_time() const {
-		if (_last_request)
-			return _last_request->get_time();
+		if (req)
+			return req->get_time();
 		return NULL;
 	}
 

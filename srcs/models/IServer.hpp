@@ -21,11 +21,14 @@ class IServer : public Webserv::Models::IBlock {
  public:
 	typedef Webserv::Models::ILocation ILocation;
 
+	typedef std::map<std::string, ILocation *>	LocationObject;
+	typedef std::map<std::string, IServer *>	VHostsObject;
+
  protected:
 	const std::string _host;
 
-	std::map<std::string, ILocation *>	_locations;
-	std::map<std::string, IServer *>	_vhosts;
+	LocationObject	_locations;
+	VHostsObject	_vhosts;
 
  public:
 	IServer() : _host("0.0.0.0") {
@@ -49,7 +52,7 @@ class IServer : public Webserv::Models::IBlock {
 		_name = lhs._name;
 		_port = lhs._port;
 
-		std::map<std::string, ILocation *>::const_iterator it;
+		LocationObject::const_iterator it;
 		for (it = lhs._locations.begin(); it != lhs._locations.end(); ++it) {
 			_locations[it->first] = it->second->clone();
 		}
@@ -69,18 +72,18 @@ class IServer : public Webserv::Models::IBlock {
 			_cgi[it4->first] = it4->second;
 		}
 
-		std::map<std::string, IServer *>::const_iterator it5;
+		VHostsObject::const_iterator it5;
 		for (it5 = lhs._vhosts.begin(); it5 != lhs._vhosts.end(); ++it5) {
 			_vhosts[it5->first] = new IServer(*(it5->second));
 		}
 	}
 
 	~IServer() {
-		std::map<std::string, ILocation *>::iterator loc_it = _locations.begin();
+		LocationObject::iterator loc_it = _locations.begin();
 		for (; loc_it != _locations.end(); loc_it++)
 			delete loc_it->second;
 
-		std::map<std::string, IServer *>::iterator vhost_it = _vhosts.begin();
+		VHostsObject::iterator vhost_it = _vhosts.begin();
 		for (; vhost_it != _vhosts.end(); vhost_it++)
 			delete vhost_it->second;
 	}
@@ -123,13 +126,51 @@ class IServer : public Webserv::Models::IBlock {
 		return location;
 	}
 
+	// vHost(s)
+	int vhosts_size() const { return _vhosts.size(); }
+	const IServer *get_vhost(const std::string &host) const {
+		if (_vhosts.size() > 0) {
+			VHostsObject::const_iterator it = _vhosts.find(host);
+			if (it != _vhosts.end())
+				return it->second;
+		}
+		return this;
+	}
+
+	// Solver for error_pages behind vHosts or Location
+	const std::string get_error_page(int status, const std::string &uri) const {
+		LocationObject::const_iterator it = _locations.find(uri);
+		if (it != _locations.end())
+			return it->second->get_error_page(status);
+		return IBlock::get_error_page(status);
+	}
+
+	const std::string
+	get_error_page(int status, const std::string &host,
+		const std::string &uri) const {
+		const IServer *server = get_vhost(host);
+		if (server)
+			return server->get_error_page(status, uri);
+		return get_error_page(status, uri);
+	}
+
+	// Other
+
 	IServer *clone() const {
 		return new IServer(*this);
 	}
 
 	void	merge(IServer *lhs) {
+		std::string lowered_name = lhs->get_name();
 		_vhosts.insert(std::pair<std::string, IServer *>(\
-			lhs->get_name(), lhs->clone()));
+			*_strtolower(&lowered_name), lhs->clone()));
+	}
+
+ private:
+	inline std::string* _strtolower(std::string *s) {
+		for (std::string::iterator it = s->begin(); it != s->end(); it++)
+			*it = std::tolower(*it);
+		return s;
 	}
 };
 }  // namespace Models

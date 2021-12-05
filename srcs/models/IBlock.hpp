@@ -19,6 +19,9 @@ class IBlock {
  public:
 	typedef Webserv::Models::EMethods EMethods;
 
+	typedef std::map<int, std::string> 			ErrorPagesObject;
+	typedef std::map<std::string, std::string>	CGIObject;
+
  protected:
 	std::string _name;
 	int			_port;
@@ -33,8 +36,8 @@ class IBlock {
 	bool 		_autoindex;
 
 	std::vector<std::string> _indexs;
-	std::map<int, std::string> _error_pages;
-	std::map<std::string, std::string>	_cgi;
+	ErrorPagesObject	_error_pages;
+	CGIObject			_cgi;
 
  public:
 	IBlock()
@@ -86,18 +89,24 @@ class IBlock {
 	}
 
 	// Error Pages
-	const std::map<int, std::string> &get_error_pages() const {
+	const ErrorPagesObject &get_error_pages() const {
 		return _error_pages;
 	}
 	void	set_error_page(int code, const std::string &source) {
-		_error_pages.insert(std::pair<int, std::string>(code, source));
+		_error_pages[code] = source;
+	}
+	const std::string get_error_page(int code) const {
+		ErrorPagesObject::const_iterator it = _error_pages.find(code);
+		if (it != _error_pages.end())
+			return it->second;
+		return "";
 	}
 
 	// CGI
-	void set_cgi(const std::string& extension, const std::string& cgi_path) {
+	void			set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
 	}
-	const std::map<std::string, std::string>& get_cgi() const {
+	const CGIObject &get_cgi() const {
 		return _cgi;
 	}
 };

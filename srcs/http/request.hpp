@@ -24,6 +24,7 @@ class Request {
 	std::string	_raw_request;
 
 	EMethod		_method;
+	std::string _host;
 	std::string	_uri;
 	std::string _http_version;
 
@@ -64,6 +65,7 @@ class Request {
 			return false;
 		if (_method == Models::POST && _validate_post() == false)
 			return false;
+		_http_code = Models::NOT_FOUND;
 		_raw_request.erase(0, 2);
 		_headers_ready = true;
 		return true;
@@ -104,10 +106,12 @@ class Request {
 	}
 
 	const struct timeval *get_time() const { return &_time; }
-	std::string get_raw_request() const { return _raw_request; }
+	int	get_code() const { return _http_code; }
+	const std::string get_raw_request() const { return _raw_request; }
 	EMethod		get_method() const { return _method; }
-	std::string get_uri() const { return _uri; }
-	std::string get_header_value(const std::string &headerName) const {
+	const std::string get_uri() const { return _uri; }
+	const std::string get_host() const { return _host; }
+	const std::string get_header_value(const std::string &headerName) const {
 		const_iterator it = _headers.find(headerName);
 		if (it == _headers.end()) {
 			return "";
@@ -139,6 +143,9 @@ class Request {
 				std::cout << "\t\t" << it2->first << ": "
 					<< it2->second << ", " << std::endl;
 			}
+			std::cout << "\t}" << std::endl;
+			std::cout << "\tbody: {" << std::endl;
+			std::cout << _raw_request << std::endl;
 		}
 		std::cout << "\t}" << std::endl;
 		std::cout << "}" << std::endl;
@@ -226,6 +233,8 @@ class Request {
 			_strtolower(&header_value);
 			_trim(&header_value);
 			(*bucket)[header_name] = header_value;
+			if (header_name == "host")
+				_host = header_value;
 			_raw_request.erase(0, header_separator_pos + 2);
 			header_separator_pos = _raw_request.find("\r\n");
 		}
@@ -328,14 +337,14 @@ class Request {
 	}
 
 	bool	_invalid_request(ECode http_code) {
-		if (http_code == Models::BAD_REQUEST)
-			std::cout << "Bad request" << std::endl;
-		else if (http_code == Models::PAYLOAD_TOO_LARGE)
-			std::cout << "Payload too large" << std::endl;
-		else if (http_code == Models::NOT_IMPLEMENTED)
-			std::cout << "Http method not implemented" << std::endl;
-		else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
-			std::cout << "Http version not supported" << std::endl;
+		// if (http_code == Models::BAD_REQUEST)
+		// 	std::cout << "Bad request" << std::endl;
+		// else if (http_code == Models::PAYLOAD_TOO_LARGE)
+		// 	std::cout << "Payload too large" << std::endl;
+		// else if (http_code == Models::NOT_IMPLEMENTED)
+		// 	std::cout << "Http method not implemented" << std::endl;
+		// else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
+		// 	std::cout << "Http version not supported" << std::endl;
 		_http_code = http_code;
 		_closed = true;
 		return false;

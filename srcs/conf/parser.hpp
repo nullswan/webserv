@@ -110,7 +110,7 @@ class Parser {
 	bool	_default_configuration() {
 		no_config_file_error();
 		_conf_file = DEFAULT_CONF_FILE;
-		std::cout << "using default configuration file" << std::endl;
+		std::cout << "[📄] using default configuration file" << std::endl;
 		return true;
 	}
 
