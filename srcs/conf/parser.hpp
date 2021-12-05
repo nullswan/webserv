@@ -53,8 +53,8 @@ class Parser {
 		} catch (std::exception &e) {
 			return false;
 		}
-		_merge_duplicates();
-		return true;
+		_handle_vhosts();
+		return _handle_interfaces();
 	}
 
 	void clear() {
@@ -73,7 +73,22 @@ class Parser {
 	}
 
  private:
-	void	_merge_duplicates() {
+	bool		_handle_interfaces() {
+		std::vector<IServer *>::const_iterator it = _servers.begin();
+		for (; it != _servers.end(); it++) {
+			std::vector<IServer *>::const_iterator it2 = it + 1;
+			for (; it2 != _servers.end();  it2++) {
+				if ((*it)->get_port() == (*it2)->get_port()) {
+					return interface_rebind_error(
+						(*it)->get_name(), (*it2)->get_name(),
+						(*it)->get_port());
+				}
+			}
+		}
+		return true;
+	}
+
+	void	_handle_vhosts() {
 		if (_servers.size() == 0)
 			return;
 

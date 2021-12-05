@@ -24,7 +24,8 @@ class IServer : public Webserv::Models::IBlock {
  protected:
 	const std::string _host;
 
-	std::map<std::string, ILocation *> _locations;
+	std::map<std::string, ILocation *>	_locations;
+	std::map<std::string, IServer *>	_vhosts;
 
  public:
 	IServer() : _host("0.0.0.0") {
@@ -67,12 +68,21 @@ class IServer : public Webserv::Models::IBlock {
 		for (it4 = lhs._cgi.begin(); it4 != lhs._cgi.end(); ++it4) {
 			_cgi[it4->first] = it4->second;
 		}
+
+		std::map<std::string, IServer *>::const_iterator it5;
+		for (it5 = lhs._vhosts.begin(); it5 != lhs._vhosts.end(); ++it5) {
+			_vhosts[it5->first] = new IServer(*(it5->second));
+		}
 	}
 
 	~IServer() {
-		std::map<std::string, ILocation *>::iterator it;
-		for (it = _locations.begin(); it != _locations.end(); it++)
-			delete it->second;
+		std::map<std::string, ILocation *>::iterator loc_it = _locations.begin();
+		for (; loc_it != _locations.end(); loc_it++)
+			delete loc_it->second;
+
+		std::map<std::string, IServer *>::iterator vhost_it = _vhosts.begin();
+		for (; vhost_it != _vhosts.end(); vhost_it++)
+			delete vhost_it->second;
 	}
 
 	// Name
@@ -113,11 +123,13 @@ class IServer : public Webserv::Models::IBlock {
 		return location;
 	}
 
+	IServer *clone() const {
+		return new IServer(*this);
+	}
+
 	void	merge(IServer *lhs) {
-		std::map<std::string, ILocation *>::const_iterator it;
-		for (it = lhs->_locations.begin(); it != lhs->_locations.end(); ++it) {
-			_locations[it->first] = it->second->clone();
-		}
+		_vhosts.insert(std::pair<std::string, IServer *>(\
+			lhs->get_name(), lhs->clone()));
 	}
 };
 }  // namespace Models

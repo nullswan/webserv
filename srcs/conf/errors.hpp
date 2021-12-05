@@ -97,6 +97,15 @@ bool	illegal_char_error(const std::string &line) {
 	return false;
 }
 
+bool
+interface_rebind_error(const std::string &host1,
+	const std::string &host2, const int &port) {
+	std::cerr << "you cannot bind the port " << port
+		<< " on both " << host1 << " and " << host2
+		<< " interfaces" << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 
