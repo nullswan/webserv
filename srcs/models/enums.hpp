@@ -65,21 +65,23 @@ EMethods	get_method(const std::string& method) {
 		return METHOD_UNKNOWN;
 }
 
-std::string	resolve_decorated_http_code(const std::string &status_code) {
-	switch (status_code.c_str()[0]) {
-		case '1':
-			return "\033[0;41;37m " + status_code + " \033[0m";
-		case '2':
-			return "\033[0;42;37m " + status_code + " \033[0m";
-		case '3':
-			return "\033[0;47;37m " + status_code + " \033[0m";
-		case '4':
-			return "\033[0;43;37m " + status_code + " \033[0m";
-		case '5':
-			return "\033[0;41;37m " + status_code + " \033[0m";
-		default:
-			return " ? ";
-	}
+std::string	resolve_decorated_http_code(int status_code) {
+	std::stringstream code;
+	code << status_code;
+
+	if (status_code > 600 ||  status_code < 100)
+		return "?";
+	if (status_code >= 500)
+		return "\033[0;41;37m " + code.str() + " \033[0m";
+	if (status_code >= 400)
+		return "\033[0;43;37m " + code.str() + " \033[0m";
+	if (status_code >= 300)
+		return "\033[0;47;30m " + code.str() + " \033[0m";
+	if (status_code >= 200)
+		return "\033[0;42;37m " + code.str() + " \033[0m";
+	if (status_code >= 100)
+		return "\033[0;41;37m " + code.str() + " \033[0m";
+	return " ? ";
 }
 
 std::string	resolve_method(EMethods method) {
@@ -91,7 +93,7 @@ std::string	resolve_method(EMethods method) {
 		case DELETE:
 			return "DELETE";
 		default:
-			return "UNKNOWN";
+			return "?";
 	}
 }
 

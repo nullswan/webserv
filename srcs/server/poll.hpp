@@ -16,6 +16,7 @@
 
 #include "instance.hpp"
 #include "../consts.hpp"
+#include "../http/status.hpp"
 #include "../http/client.hpp"
 #include "../models/enums.hpp"
 #include "../models/IServer.hpp"
@@ -38,7 +39,9 @@ class Poll {
 
  public:
 	Poll()
-	: _alive(true) {}
+	: _alive(true) {
+		Http::init_status_map();
+	}
 
 	~Poll() {
 		for (std::map<int, Instance *>::iterator it = _instances.begin();
@@ -232,6 +235,7 @@ class Poll {
 		std::map<int, Client *>::iterator it = _clients.begin();
 		for (; it != _clients.end(); it++) {
 			if (it->second->is_expired(now.tv_sec)) {
+				it->second->abort(408);
 				_delete_client(it->first, it->second);
 				return _handle_expired_clients();
 			}

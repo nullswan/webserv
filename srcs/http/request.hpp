@@ -104,6 +104,7 @@ class Request {
 	}
 
 	const struct timeval *get_time() const { return &_time; }
+	int	get_code() const { return _http_code; }
 	std::string get_raw_request() const { return _raw_request; }
 	EMethod		get_method() const { return _method; }
 	std::string get_uri() const { return _uri; }

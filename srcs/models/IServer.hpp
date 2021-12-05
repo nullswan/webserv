@@ -123,6 +123,11 @@ class IServer : public Webserv::Models::IBlock {
 		return location;
 	}
 
+	// vHost(s)
+	int vhosts_size() const { return _vhosts.size(); }
+
+	// Other
+
 	IServer *clone() const {
 		return new IServer(*this);
 	}
