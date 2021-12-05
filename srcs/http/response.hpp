@@ -34,7 +34,7 @@ class Response {
 	:	_status(code) {}
 
 	bool	prepare(IServer *master) {
-		if (_req) { invoke(master); }
+		if (_req && _status < 400) { invoke(master); }
 		if (_status >= 400) {
 			if (_req) {
 				_body = master->get_error_page(_status, _req->get_host(), _req->get_uri());
@@ -44,7 +44,6 @@ class Response {
 				_body = generate_status_page(_status);
 			}
 		}
-
 		_payload = _prepare_headers() + _body + "\r\n";
 		return true;
 	}
