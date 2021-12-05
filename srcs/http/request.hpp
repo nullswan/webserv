@@ -139,6 +139,9 @@ class Request {
 				std::cout << "\t\t" << it2->first << ": "
 					<< it2->second << ", " << std::endl;
 			}
+			std::cout << "\t}" << std::endl;
+			std::cout << "\tbody: {" << std::endl;
+			std::cout << _raw_request << std::endl;
 		}
 		std::cout << "\t}" << std::endl;
 		std::cout << "}" << std::endl;

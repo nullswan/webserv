@@ -67,7 +67,7 @@ const std::string	&generate_status_page(const int &status_code) {
 		"		<h1>" + status_code + " - " + resolve_code(status_code) + "/h1>"
 		"		<hr />"
 		#ifdef BUILD_COMMIT
-		"		<p><em>Webserv@" + BUILD_COMMIT + "</em></p>"
+		"		<p><em>" + WEBSERV_SERVER_VERSION + "</em></p>"
 		#else
 		"		<p><em>Webserv</em></p>"
 		#endif

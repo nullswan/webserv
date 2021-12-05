@@ -12,11 +12,11 @@
 #include <string>
 #include <sstream>
 
+#include "../consts.hpp"
 #include "request.hpp"
 #include "response.hpp"
 #include "../models/IServer.hpp"
 #include "../models/enums.hpp"
-#include "../models/consts.hpp"
 
 namespace Webserv {
 namespace Http {
@@ -65,8 +65,8 @@ class Client {
 	}
 
 	ERead read_request() {
-		char buffer[REQ_BUF_SIZE + 1] = {0};
-		ssize_t n = recv(_fd, buffer, REQ_BUF_SIZE, 0);
+		char buffer[WEBSERV_REQUEST_BUFFER_SIZE + 1] = {0};
+		ssize_t n = recv(_fd, buffer, WEBSERV_REQUEST_BUFFER_SIZE, 0);
 		if (n == -1) {
 			return Models::READ_ERROR;
 		} else if (n == 0) {
@@ -93,7 +93,7 @@ class Client {
 
 	int	get_fd() const { return _fd; }
 	bool	is_expired(time_t now) const {
-		return (now - _last_ping.tv_sec) > TIMEOUT;
+		return (now - _last_ping.tv_sec) > WEBSERV_CLIENT_TIMEOUT;
 	}
 
  private:

@@ -15,9 +15,9 @@
 #include <iostream>
 
 #include "instance.hpp"
+#include "../consts.hpp"
 #include "../http/client.hpp"
 #include "../models/enums.hpp"
-#include "../models/consts.hpp"
 #include "../models/IServer.hpp"
 
 namespace Webserv {
@@ -61,11 +61,11 @@ class Poll {
 	}
 
 	int	run() {
-		struct epoll_event events[MAX_CONNS];
+		struct epoll_event events[WEBSERV_MAX_CONNS];
 		int	nfds, i, evs = 0;
-		std::cout << "up and awaiting..." << std::endl;
+		std::cout << "[📭] up and awaiting..." << std::endl;
 		while (_alive) {
-			nfds = epoll_wait(epoll_fd, events, MAX_CONNS, 1000);
+			nfds = epoll_wait(epoll_fd, events, WEBSERV_MAX_CONNS, 1000);
 			for (i = 0; i < nfds; i++) {
 				++evs;
 				int ev_fd = events[i].data.fd;
@@ -215,13 +215,13 @@ class Poll {
 		#ifndef WEBSERV_BENCHMARK
 			if (!std::getline(std::cin, line) || line == "quit" || line == "exit") {
 				_alive = false;
-				std::cout << "shutting down..." << std::endl;
+				std::cout << "[📪] shutting down..." << std::endl;
 			}
 		#else
 			std::getline(std::cin, line);
 			if (line == "quit" || line == "exit") {
 				_alive = false;
-				std::cout << "shutting down..." << std::endl;
+				std::cout << "[📪] shutting down..." << std::endl;
 			}
 		#endif
 	}

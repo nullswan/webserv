@@ -16,7 +16,7 @@
 
 #include <string>
 
-#include "../models/consts.hpp"
+#include "../consts.hpp"
 #include "../models/IServer.hpp"
 
 namespace Webserv {
@@ -76,9 +76,10 @@ class Instance : public Webserv::Models::IServer {
 			throw std::runtime_error("bind() failed");
 	}
 	void	_listen_socket() {
-		if (listen(_fd, MAX_CONNS) == -1)
+		if (listen(_fd, WEBSERV_MAX_CONNS) == -1)
 			throw std::runtime_error("listen() failed");
-		std::cout << _name << " bound on " << _host << ":" << _port << std::endl;
+		std::cout << "[📍] " << _name << " bound on "
+			<< _host << ":" << _port << std::endl;
 	}
 };
 }  // namespace Server

@@ -53,7 +53,7 @@ bool	usage_error(const std::string &file) {
 }
 
 bool	no_config_file_error() {
-	std::cerr << "no config file specified" << std::endl;
+	std::cerr << "[📄] no config file specified" << std::endl;
 	return false;
 }
 

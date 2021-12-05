@@ -13,8 +13,18 @@ class Response {
 	std::string _body;
 	std::string _payload;
 
+	std::map<std::string, std::string> _headers;
  public:
 	Response() : _header(""), _body("") {
+		_headers["Server"] = WEBSERV_SERVER_VERSION;
+		#ifdef WEBSERV_BUILD_COMMIT
+			_headers["Server"] += WEBSERV_BUILD_COMMIT;
+		#endif
+
+		// Date: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Date
+		// Content-Length: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+		// Content-Type: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type
+
 		_header = "HTTP/1.1 200 OK\r\n"
 		"Content-Type: text/html\r\n"
 		"Content-length: 12\r\n\r\n";

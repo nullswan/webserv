@@ -1,7 +1,13 @@
+#include <iostream>
+
 #include "conf/parser.hpp"
 #include "server/poll.hpp"
 
 int	main(int ac, char **av) {
+	#ifdef WEBSERV_BENCHMARK
+		std::cout << "[🚀] starting in benchmark mode " << std::endl;
+	#endif
+
 	Webserv::Conf::Parser	parser;
 	if (!parser.run(ac, av)) {
 		return 1;
