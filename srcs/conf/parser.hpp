@@ -342,6 +342,8 @@ class Parser {
 					continue;
 				}
 				case CONF_SERVER_LOCATION: {
+					if (scope == 2)
+						return nested_locations_error(line, line_nbr);
 					++scope;
 					_extract_value("location", &line, true);
 
