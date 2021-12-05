@@ -7,6 +7,7 @@ BFLAGS = -D BUILD_COMMIT=$(BUILD_COMMIT)
 CFLAGS	:= -Wall -Wextra -Werror -std=c++98
 OFLAGS  := -O3 -D WEBSERV_BENCHMARK=1
 DFLAGS	= -MMD -MF $(@:.o=.d)
+SHELL	:= /bin/bash
 # DEBUGFLAGS = -pedantic -Wunreachable-code -Wunused
 
 FILES	= main.cpp
@@ -81,6 +82,22 @@ nginx	:
 	docker run --name webserv_nginx -p 9090:9090 -d nginx
 	@ touch .nginx
 
+.PHONY: confirm
+confirm:
+	@if [[ -z "$(CI)" ]]; then \
+		REPLY="" ; \
+		read -p "/!\ Are you sure? [y/n] > " -r ; \
+		if [[ ! $$REPLY =~ ^[Yy]$$ ]]; then \
+			printf "KO"; \
+			exit 1 ; \
+		else \
+			printf "OK"; \
+			exit 0; \
+		fi \
+	fi
+
 .PHONY	: push
 push	: lint tests
-		@ git push
+	@if $(MAKE) -s confirm ; then \
+		git push ; \
+	fi
