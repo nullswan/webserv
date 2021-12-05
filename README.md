@@ -1,7 +1,7 @@
 
 # webserv
 
-School 42 Project - Rebuild a HTTP/1.1 resilient server.
+School 42 Project - Build HTTP/1.1 resilient server.
 
 
 
@@ -22,15 +22,16 @@ School 42 Project - Rebuild a HTTP/1.1 resilient server.
 
 **Core:** C++ / C
 
-**Tests:** Python
+**Tests:** Go / Python
 
 
 ## Features
-- Support HTTP/1.0 && HTTP/1.1
+- HTTP/1.1 Support
 - 100.00% availability using epoll()
 - (In progress) Support GET, POST, DELETE
 - Mimic official HTTP responses
 - Listen multiple ports
+- VHosts
 - Fully configurable (view https://github.com/c3b5aw/webserv/blob/config/docs/config_file.md)
 - (In progress) Support Cookies and Session
 - (In progress) Support CGI
