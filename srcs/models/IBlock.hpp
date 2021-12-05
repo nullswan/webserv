@@ -27,6 +27,7 @@ class IBlock {
 	int			_port;
 
 	std::string _root;
+	std::string _upload_pass;
 	std::string _redirection;
 	int			_redirection_code;
 
@@ -42,6 +43,7 @@ class IBlock {
  public:
 	IBlock()
 	: 	_root(""),
+		_upload_pass(""),
 		_redirection(""),
 		_body_limit(1000000),
 		_autoindex(false) {
@@ -59,6 +61,10 @@ class IBlock {
 	// Root
 	void set_root(const std::string& root) { _root = root; }
 	std::string get_root() const { return _root; }
+
+	// Upload Pass
+	void set_upload_pass(const std::string& pass) { _upload_pass = pass; }
+	std::string get_upload_pass() const { return _upload_pass; }
 
 	// Redirection, redirection_code
 	void set_redirection(const std::string& redirection, const int code) {

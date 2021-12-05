@@ -116,6 +116,7 @@ class IServer : public Webserv::Models::IBlock {
 			_name, _port,
 			key,
 			_root,
+			_upload_pass,
 			_redirection, _redirection_code,
 			_body_limit,
 			_methods_allowed,
