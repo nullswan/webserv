@@ -16,9 +16,9 @@
 
 #include "instance.hpp"
 #include "../consts.hpp"
-#include "../http/status.hpp"
+#include "../http/enums.hpp"
+#include "../http/codes.hpp"
 #include "../http/client.hpp"
-#include "../models/enums.hpp"
 #include "../models/IServer.hpp"
 
 namespace Webserv {
@@ -26,21 +26,21 @@ namespace Server {
 class Poll {
  public:
 	typedef Webserv::Models::IServer	IServer;
-	typedef Webserv::Models::ERead		ERead;
-	typedef Webserv::Server::Instance	Instance;
-	typedef Webserv::Http::Client		Client;
+
+	typedef std::map<int, Instance *>		InstanceObject;
+	typedef std::map<int, HTTP::Client *> 	ClientObject;
 
  private:
 	bool	_alive;
 	int		epoll_fd;
 
-	std::map<int, Instance *> _instances;
-	std::map<int, Client *> _clients;
+	InstanceObject	_instances;
+	ClientObject	_clients;
 
  public:
 	Poll()
 	: _alive(true) {
-		Http::init_status_map();
+		HTTP::init_status_map();
 	}
 
 	~Poll() {
@@ -48,8 +48,7 @@ class Poll {
 			it != _instances.end(); ++it)
 			delete it->second;
 
-		for (std::map<int, Client *>::iterator it = _clients.begin();
-			it != _clients.end(); ++it)
+		for (ClientObject::iterator it = _clients.begin(); it != _clients.end(); ++it)
 			delete it->second;
 		close(epoll_fd);
 	}
@@ -165,7 +164,7 @@ class Poll {
 	}
 
 	void	_handle_connection(IServer *master, int fd) {
-		Client *client = new Client(master, fd);
+		HTTP::Client *client = new HTTP::Client(master, fd);
 		if (!client) {
 			std::cerr << "handle_connection: alloc failed" << std::endl;
 			return;
@@ -194,15 +193,15 @@ class Poll {
 			return;
 		}
 
-		Client *client = _clients[ev_fd];
-		ERead ret = client->read_request();
-		if (ret == Models::READ_EOF || ret == Models::READ_ERROR)
+		HTTP::Client *client = _clients[ev_fd];
+		HTTP::READ ret = client->read_request();
+		if (ret == HTTP::READ_EOF || ret == HTTP::READ_ERROR)
 			return _delete_client(ev_fd, client);
-		else if (ret == Models::READ_OK)
+		else if (ret == HTTP::READ_OK)
 			return _change_epoll_state(ev_fd, EPOLLOUT);
 	}
 	void	_handle_write(int ev_fd) {
-		Client *client = _clients[ev_fd];
+		HTTP::Client *client = _clients[ev_fd];
 		if (!client) {
 			std::cerr << "handle_write: invalid fd" << std::endl;
 			return;
@@ -232,7 +231,7 @@ class Poll {
 		struct timeval now;
 		gettimeofday(&now, NULL);
 
-		std::map<int, Client *>::iterator it = _clients.begin();
+		ClientObject::iterator it = _clients.begin();
 		for (; it != _clients.end(); it++) {
 			if (it->second->is_expired(now.tv_sec)) {
 				it->second->abort(408);
@@ -242,7 +241,7 @@ class Poll {
 		}
 	}
 
-	void	_delete_client(int ev_fd, Client *client) {
+	void	_delete_client(int ev_fd, HTTP::Client *client) {
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev_fd, NULL);
 		delete client;
 		_clients.erase(ev_fd);
@@ -254,7 +253,7 @@ class Poll {
 		event.data.fd = ev_fd;
 		if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, ev_fd, &event) == -1) {
 			std::cerr << "_change_epoll_state: failed()" << std::endl;
-			Client *client = _clients[ev_fd];
+			HTTP::Client *client = _clients[ev_fd];
 			return _delete_client(ev_fd, client);
 		}
 	}
