@@ -32,6 +32,7 @@ class ILocation : public Webserv::Models::IBlock {
 		const int &port,
 		const std::string &path,
 		const std::string &root,
+		const std::string &upload_pass,
 		const std::string &redirection,
 		const int &redirection_code,
 		const size_t &body_limit,
@@ -43,6 +44,7 @@ class ILocation : public Webserv::Models::IBlock {
 		_name = name;
 		_port = port;
 		_root = root;
+		_upload_pass = upload_pass;
 		_redirection = redirection;
 		_redirection_code = redirection_code;
 		_body_limit = body_limit;

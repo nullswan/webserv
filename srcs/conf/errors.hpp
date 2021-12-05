@@ -106,6 +106,12 @@ interface_rebind_error(const std::string &host1,
 	return false;
 }
 
+bool	nested_locations_error(const std::string &line, const int &line_nbr) {
+	std::cerr << "nested locations '" << line << "' at line "
+		<< line_nbr << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 

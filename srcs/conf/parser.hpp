@@ -210,6 +210,8 @@ class Parser {
 			return CONF_BLOCK_ROOT;
 		if (key == "server_name")
 			return CONF_SERVER_NAME;
+		if (key == "upload_pass")
+			return CONF_BLOCK_UPLOAD_PASS;
 		return CONF_NOT_FOUND_TOKEN;
 	}
 
@@ -342,6 +344,8 @@ class Parser {
 					continue;
 				}
 				case CONF_SERVER_LOCATION: {
+					if (scope == 2)
+						return nested_locations_error(line, line_nbr);
 					++scope;
 					_extract_value("location", &line, true);
 
@@ -421,6 +425,17 @@ class Parser {
 					if (line.size() == 0)
 						return invalid_value_error(line, line_nbr);
 					_servers.back()->set_name(line);
+					continue;
+				}
+				case CONF_BLOCK_UPLOAD_PASS: {
+					_extract_value("upload_pass", &line, false);
+
+					if (line.size() == 0)
+						return invalid_value_error(line, line_nbr);
+					if (locations.size() == 0)
+						_servers.back()->set_upload_pass(line);
+					else
+						locations.back()->set_upload_pass(line);
 					continue;
 				}
 				case CONF_EMPTY_TOKEN:
