@@ -14,13 +14,13 @@ namespace Webserv {
 namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
-	typedef std::map<std::string, std::string>	HeadersObject;
+	typedef std::map<std::string, std::string>		HeadersObject;
 
  private:
 	std::string _body;
 	std::string _payload;
 
-	std::map<std::string, std::string> _headers;
+	HeadersObject _headers;
 
 	int _status;
 
@@ -56,11 +56,11 @@ class Response {
  private:
 	void	invoke(IServer *master) {
 		(void)master;
-		if (_req->get_method() == METH_GET) {
-		} else if (_req->get_method() == METH_POST) {
-		} else if (_req->get_method() == METH_DELETE) {
-		} else {
-		}
+		// if (_req->get_method() == METH_GET)
+			// get correct vhosts and cast it the host
+		// else if (_req->get_method() == METH_POST)
+		// else if (_req->get_method() == METH_DELETE)
+		// else
 	}
 
 	std::string _prepare_headers() {
