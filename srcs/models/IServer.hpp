@@ -129,31 +129,28 @@ class IServer : public Webserv::Models::IBlock {
 	// vHost(s)
 	int vhosts_size() const { return _vhosts.size(); }
 	const IServer *get_vhost(const std::string &host) const {
-		VHostsObject::const_iterator it = _vhosts.find(host);
-		if (it != _vhosts.end())
-			return it->second;
-		return 0;
+		if (_vhosts.size() > 0) {
+			VHostsObject::const_iterator it = _vhosts.find(host);
+			if (it != _vhosts.end())
+				return it->second;
+		}
+		return this;
 	}
 
 	// Solver for error_pages behind vHosts or Location
 	const std::string get_error_page(int status, const std::string &uri) const {
 		LocationObject::const_iterator it = _locations.find(uri);
-		if (it != _locations.end()) {
-			std::cout << "found" << std::endl;
+		if (it != _locations.end())
 			return it->second->get_error_page(status);
-		}
-		std::cout << "not found" << std::endl;
 		return IBlock::get_error_page(status);
 	}
 
 	const std::string
 	get_error_page(int status, const std::string &host,
 		const std::string &uri) const {
-		if (_vhosts.size() > 0) {
-			const IServer *server = get_vhost(host);
-			if (server)
-				return server->get_error_page(status, uri);
-		}
+		const IServer *server = get_vhost(host);
+		if (server)
+			return server->get_error_page(status, uri);
 		return get_error_page(status, uri);
 	}
 

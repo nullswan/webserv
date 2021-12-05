@@ -88,7 +88,7 @@ class Client {
 		if (resp)
 			delete resp;
 		resp = new Response(code);
-		resp->prepare();
+		resp->prepare(_master);
 
 		send(_fd, resp->toString(), resp->size(), 0);
 	}
@@ -96,8 +96,8 @@ class Client {
 	bool	send_response() {
 		if (resp)
 			delete resp;
-		resp = new Response();
-		resp->prepare();
+		resp = new Response(req);
+		resp->prepare(_master);
 		send(_fd, resp->toString(), resp->size(), 0);
 		return _close();
 	}

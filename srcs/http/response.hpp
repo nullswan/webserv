@@ -7,6 +7,8 @@
 #include <string>
 
 #include "status.hpp"
+#include "request.hpp"
+#include "../models/IServer.hpp"
 
 namespace Webserv {
 namespace Http {
@@ -22,17 +24,31 @@ class Response {
 
 	int _status;
 
+	Request *_req;
 
  public:
-	Response() : _body(""), _status(200) {
-		_body = "Hello World!";
-	}
+	explicit Response(Request *request)
+	:	_status(request->get_code()), _req(request) {}
 
 	explicit Response(int code)
-	:	_body(generate_status_page(code)),
-		_status(code) {}
+	:	_status(code) {}
 
-	bool	prepare() {
+	bool	prepare(IServer *master) {
+		(void)master;
+		if (_req) {
+			// resolve
+		}
+
+		if (_status != 200) {
+			if (_req) {
+				_body = master->get_error_page(_status, _req->get_host(), _req->get_uri());
+				if (_body == "")
+					_body = generate_status_page(_status);
+			} else {
+				_body = generate_status_page(_status);
+			}
+		}
+
 		_headers["Content-Type"] = "text/html; charset=utf-8";
 		_headers["Content-Length"] = _toString(_body.size());
 		_headers["Server"] = WEBSERV_SERVER_VERSION;

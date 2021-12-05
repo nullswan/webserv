@@ -337,14 +337,14 @@ class Request {
 	}
 
 	bool	_invalid_request(ECode http_code) {
-		if (http_code == Models::BAD_REQUEST)
-			std::cout << "Bad request" << std::endl;
-		else if (http_code == Models::PAYLOAD_TOO_LARGE)
-			std::cout << "Payload too large" << std::endl;
-		else if (http_code == Models::NOT_IMPLEMENTED)
-			std::cout << "Http method not implemented" << std::endl;
-		else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
-			std::cout << "Http version not supported" << std::endl;
+		// if (http_code == Models::BAD_REQUEST)
+		// 	std::cout << "Bad request" << std::endl;
+		// else if (http_code == Models::PAYLOAD_TOO_LARGE)
+		// 	std::cout << "Payload too large" << std::endl;
+		// else if (http_code == Models::NOT_IMPLEMENTED)
+		// 	std::cout << "Http method not implemented" << std::endl;
+		// else if (http_code == Models::HTTP_VERSION_NOT_SUPPORTED)
+		// 	std::cout << "Http version not supported" << std::endl;
 		_http_code = http_code;
 		_closed = true;
 		return false;
