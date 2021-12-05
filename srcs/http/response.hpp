@@ -11,7 +11,8 @@
 namespace Webserv {
 namespace Http {
 class Response {
-	typedef std::map<std::string, std::string> HeadersObject;
+	typedef Webserv::Models::IServer 				IServer;
+	typedef std::map<std::string, std::string>	HeadersObject;
 
  private:
 	std::string _body;
@@ -60,8 +61,9 @@ class Response {
 
  private:
 	void	_set_date() {
-		char buf[30];
 		std::time_t t = std::time(NULL);
+		char buf[30];
+
 		strftime(buf, sizeof(buf), "%a, %d %b %Y %T %Z", std::localtime(&t));
 		_headers["Date"] = std::string(buf);
 	}

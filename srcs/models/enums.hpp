@@ -36,7 +36,9 @@ enum ERead {
 
 enum ECode {
 	NOCODE = 0,
+	OK = 200,
 	BAD_REQUEST = 400,
+	NOT_FOUND = 404,
 	PAYLOAD_TOO_LARGE = 413,
 	NOT_IMPLEMENTED = 501,
 	HTTP_VERSION_NOT_SUPPORTED = 505
@@ -100,11 +102,11 @@ std::string	resolve_method(EMethods method) {
 std::string resolve_decorated_method(EMethods method) {
 	switch (method) {
 		case GET:
-			return "\033[0;42;37m GET    \033[0m";
+			return "\033[0;42;37m GET     \033[0m";
 		case POST:
-			return "\033[0;46;37m POST   \033[0m";
+			return "\033[0;46;37m POST    \033[0m";
 		case DELETE:
-			return "\033[0;41;37m DELETE \033[0m";
+			return "\033[0;41;37m DELETE  \033[0m";
 		default:
 			return " UNKNOWN ";
 	}
