@@ -26,7 +26,7 @@ class ILocation : public Webserv::Models::IBlock {
 		_name = host;
 		_port = port;
 	}
-	ILocation(const ILocation &lhs) 
+	ILocation(const ILocation &lhs)
 	:	IBlock(lhs),
 		_path(lhs._path) {}
 
