@@ -105,6 +105,7 @@ class Response {
 	}
 
 	bool	_get_index(const Models::ILocation *loc,
+		const std::string &path,
 		const std::vector<struct dirent> &files) {
 		Models::IBlock::IndexObject indexs;
 		if (loc)
@@ -117,16 +118,9 @@ class Response {
 		Models::IBlock::IndexObject::const_iterator it;
 		for (it = indexs.begin(); it != indexs.end(); it++) {
 			std::vector<struct dirent>::const_iterator	it_file;
-			for (it_file = files.begin(); it_file != files.end(); it_file++) {
-				if (it_file->d_name == *it) {
-					if (loc)
-						return _get_file_path(loc, loc->get_root()
-							+ loc->get_path() + "/" + it_file->d_name);
-					else
-						return _get_file_path(loc, _master->get_root()
-							+ "/" + it_file->d_name);
-				}
-			}
+			for (it_file = files.begin(); it_file != files.end(); it_file++)
+				if (it_file->d_name == *it)
+					return _get_file_path(loc, path + "/" + it_file->d_name);
 		}
 		return false;
 	}
@@ -193,12 +187,13 @@ class Response {
 		std::vector<struct dirent> files;
 		if (!_dump_files_dir(path, &files))
 			return false;
-		if (_get_index(loc, files))
+		if (_get_index(loc, path, files))
 			return true;
 		if (loc && loc->get_autoindex())
 			return _get_autoindex(files, _req->get_uri(), loc->get_root());
 		else if (!loc && _master->get_autoindex())
 			return _get_autoindex(files, _req->get_uri(), _master->get_root());
+		_status = 404;
 		return false;
 	}
 
