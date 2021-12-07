@@ -26,7 +26,9 @@ class ILocation : public Webserv::Models::IBlock {
 		_name = host;
 		_port = port;
 	}
-	ILocation(const ILocation &lhs) : IBlock(lhs) {}
+	ILocation(const ILocation &lhs)
+	:	IBlock(lhs),
+		_path(lhs._path) {}
 
 	ILocation(const std::string &name,
 		const int &port,
@@ -40,7 +42,7 @@ class ILocation : public Webserv::Models::IBlock {
 		const bool &autoindex,
 		const std::vector<std::string> indexs,
 		const std::map<int, std::string> error_pages)
-	: _path(path) {
+	:	_path(path) {
 		_name = name;
 		_port = port;
 		_root = root;

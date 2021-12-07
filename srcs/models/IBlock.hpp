@@ -6,6 +6,9 @@
 #ifndef MODELS_IBLOCK_HPP_
 #define MODELS_IBLOCK_HPP_
 
+#include <unistd.h>
+#include <limits.h>
+
 #include <map>
 #include <vector>
 #include <string>
@@ -19,6 +22,7 @@ class IBlock {
  public:
 	typedef std::map<int, std::string> 			ErrorPagesObject;
 	typedef std::map<std::string, std::string>	CGIObject;
+	typedef std::vector<std::string>			IndexObject;
 
  protected:
 	std::string _name;
@@ -34,17 +38,23 @@ class IBlock {
 	bool 		_methods_allowed[WEBSERV_METHODS_SUPPORTED];
 	bool 		_autoindex;
 
-	std::vector<std::string> _indexs;
+	IndexObject 		_indexs;
 	ErrorPagesObject	_error_pages;
 	CGIObject			_cgi;
 
  public:
 	IBlock()
-	: 	_root(""),
+	: 	_root(WEBSERV_DEFAULT_ROOT_DIR),
 		_upload_pass(""),
 		_redirection(""),
 		_body_limit(1000000),
-		_autoindex(false) {
+		_autoindex(false),
+		_indexs(),
+		_error_pages(),
+		_cgi() {
+		char cwd[PATH_MAX + 1];
+		if (getcwd(cwd, sizeof(cwd)) != NULL)
+			_root = cwd;
 		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++) {
 			_methods_allowed[i] = true;
 		}
@@ -89,7 +99,7 @@ class IBlock {
 	bool get_autoindex() const { return _autoindex; }
 
 	// Index(s)
-	const std::vector<std::string> &get_indexs() const { return _indexs; }
+	const IndexObject &get_indexs() const { return _indexs; }
 	void							add_index(const std::string &index) {
 		_indexs.push_back(index);
 	}
@@ -112,8 +122,18 @@ class IBlock {
 	void			set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
 	}
-	const CGIObject &get_cgi() const {
+	const CGIObject &get_cgis() const {
 		return _cgi;
+	}
+	const std::string get_cgi(const std::string &uri) const {
+		const std::string ext = uri.find(".") != std::string::npos
+			? uri.substr(uri.find("."), uri.size()) : "";
+		if (ext == "")
+			return "";
+		CGIObject::const_iterator it = _cgi.find(ext);
+		if (it != _cgi.end())
+			return it->second;
+		return "";
 	}
 };
 }  // namespace Models

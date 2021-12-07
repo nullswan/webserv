@@ -32,12 +32,8 @@ class IServer : public Webserv::Models::IBlock {
 
  public:
 	IServer() : _host("0.0.0.0") {
-		/*
-			in case we are super user 
-			we set the port to 80, as nginx does
-		*/
 		_port = 8000;
-		if (getuid() == 0)
+		if (getuid() == 0)  // nginx docs set 80 to root usr
 			set_port(80);
 	}
 
@@ -51,6 +47,16 @@ class IServer : public Webserv::Models::IBlock {
 	:	_host(lhs._host) {
 		_name = lhs._name;
 		_port = lhs._port;
+		_root = lhs._root;
+		_upload_pass = lhs._upload_pass;
+		_redirection = lhs._redirection;
+		_redirection_code = lhs._redirection_code;
+		_body_limit = lhs._body_limit;
+
+		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++)
+			_methods_allowed[i] = true;
+
+		_autoindex = lhs._autoindex;
 
 		LocationObject::const_iterator it;
 		for (it = lhs._locations.begin(); it != lhs._locations.end(); ++it) {
@@ -62,12 +68,12 @@ class IServer : public Webserv::Models::IBlock {
 			_indexs.push_back(*it2);
 		}
 
-		std::map<int, std::string>::const_iterator it3;
+		ErrorPagesObject::const_iterator it3;
 		for (it3 = lhs._error_pages.begin(); it3 != lhs._error_pages.end(); ++it3) {
 			_error_pages[it3->first] = it3->second;
 		}
 
-		std::map<std::string, std::string>::const_iterator it4;
+		CGIObject::const_iterator it4;
 		for (it4 = lhs._cgi.begin(); it4 != lhs._cgi.end(); ++it4) {
 			_cgi[it4->first] = it4->second;
 		}
@@ -127,7 +133,7 @@ class IServer : public Webserv::Models::IBlock {
 		return location;
 	}
 
-	// vHost(s)
+	// vHost(s) solver
 	int vhosts_size() const { return _vhosts.size(); }
 	const IServer *get_vhost(const std::string &host) const {
 		if (_vhosts.size() > 0) {
@@ -138,11 +144,29 @@ class IServer : public Webserv::Models::IBlock {
 		return this;
 	}
 
-	// Solver for error_pages behind vHosts or Location
+	const ILocation
+	*get_location_using_vhosts(const std::string &host,
+		const std::string &uri) const {
+		const IServer *vhost = get_vhost(host);
+		return vhost->get_location(uri);
+	}
+
+	// ILocation(s) solver
+	ILocation *get_location(const std::string &uri) const {
+		std::string real_uri = uri;
+		if (real_uri.find("/", 1) != std::string::npos)
+			real_uri = real_uri.substr(0, real_uri.find("/", 1));
+		LocationObject::const_iterator loc_it = _locations.find(real_uri);
+		if (loc_it != _locations.end())
+			return loc_it->second;
+		return 0;
+	}
+
+	// Error Page(s) solver
 	const std::string get_error_page(int status, const std::string &uri) const {
-		LocationObject::const_iterator it = _locations.find(uri);
-		if (it != _locations.end())
-			return it->second->get_error_page(status);
+		ILocation *loc = get_location(uri);
+		if (loc)
+			return loc->get_error_page(status);
 		return IBlock::get_error_page(status);
 	}
 

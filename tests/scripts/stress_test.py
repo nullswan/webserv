@@ -7,7 +7,7 @@ import subprocess
 def run_test(reps: int, siege_bin: str) -> bool:
 	siege_process = subprocess.Popen(
 		[
-			siege_bin, "http://127.0.0.1:8000/", 
+			siege_bin, "http://127.0.0.1:8000/ping/index.html", 
 			"--concurrent", "255", "--reps", str(reps), "--benchmark", "--quiet", "--json-output"
 		],
 		stdout=subprocess.PIPE)

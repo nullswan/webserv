@@ -55,6 +55,8 @@ class Parser {
 		} catch (std::exception &e) {
 			return false;
 		}
+		if (_servers.size() <= 0)
+			return no_server_error();
 		_handle_vhosts();
 		return _handle_interfaces();
 	}

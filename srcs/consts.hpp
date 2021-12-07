@@ -7,5 +7,6 @@
 #define WEBSERV_METHODS_SUPPORTED	3
 
 #define WEBSERV_SERVER_VERSION		"Webserv/v1.0"
+#define WEBSERV_DEFAULT_ROOT_DIR	"tests/www/html"
 
 #endif  // CONSTS_HPP_

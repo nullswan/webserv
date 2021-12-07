@@ -1,10 +1,3 @@
-/*
-
-	Represent a server instance.
-		-> Defined as a server block in the configuration file.
-
-*/
-
 #ifndef SERVER_INSTANCE_HPP_
 #define SERVER_INSTANCE_HPP_
 

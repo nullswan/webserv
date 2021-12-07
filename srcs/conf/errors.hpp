@@ -112,6 +112,11 @@ bool	nested_locations_error(const std::string &line, const int &line_nbr) {
 	return false;
 }
 
+bool	no_server_error() {
+	std::cerr << "[📡] no server specified" << std::endl;
+	return false;
+}
+
 }  // namespace Conf
 }  // namespace Webserv
 
