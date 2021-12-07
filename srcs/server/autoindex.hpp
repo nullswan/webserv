@@ -3,7 +3,7 @@
 
 #include <dirent.h>
 
-#include <map>
+#include <string>
 #include <vector>
 #include <utility>
 #include <sstream>
@@ -22,8 +22,8 @@ class AutoIndexBuilder {
 	IndexObject _files;
 
  public:
-	AutoIndexBuilder(const std::vector<struct dirent>& indexs, const std::string &root, 
-		const std::string &path) {
+	AutoIndexBuilder(const std::vector<struct dirent>& indexs,
+		const std::string &root, const std::string &path) {
 		_build_header(path);
 		_table_header();
 
@@ -35,14 +35,15 @@ class AutoIndexBuilder {
 		_dump_indexs();
 		_table_footer();
 		_build_footer();
-	};
+	}
 
 	const std::string toString() const {
 		return _source.str();
 	}
 
  private:
-	void	_build_row(struct dirent index, const std::string &root, const std::string &path) {
+	void	_build_row(struct dirent index,
+		const std::string &root, const std::string &path) {
 		const std::string file_path = root + path + std::string(index.d_name);
 
 		if (index.d_name[0] == '.' && strlen(index.d_name) == 1)
@@ -50,32 +51,37 @@ class AutoIndexBuilder {
 		struct stat st;
 		if (stat(file_path.c_str(), &st) == -1)
 			return;
-		
+
+		char	date[64];
+		strftime(date, sizeof(date), "%d-%b-%Y %H:%M",
+			localtime(&st.st_mtime));
+
 		switch (st.st_mode & S_IFMT) {
 			case S_IFDIR:
-				return _build_row_dir(index.d_name, &st.st_mtime);
+				return _build_row_dir(index.d_name, date);
 			default:
-				return _build_row_file(index.d_name, &st.st_mtime, st.st_size);
+				return _build_row_file(index.d_name, date, st.st_size);
 		}
 	}
 
-	void	_build_row_file(const std::string &name, const time_t *mtime, size_t size) {
+	void	_build_row_file(const std::string &name, const std::string &mtime,
+		const size_t size) {
 		std::stringstream obj;
-		
+
 		obj << "<tr>\n";
 		obj << "<td><a href=\"" << name << "\">" << name << "</a></td>\n";
-		obj << "<td>" << ctime(mtime) << "</td>\n"
+		obj << "<td>" << mtime << "</td>\n"
 			"<td>" << size << "</td>\n"
 			"</tr>\n";
 		_files.push_back(std::make_pair(name, obj.str()));
 	}
 
-	void	_build_row_dir(const std::string &name, const time_t *mtime) {
+	void	_build_row_dir(const std::string &name, const std::string &mtime) {
 		std::stringstream obj;
 
 		obj << "<tr>\n";
 		obj << "<td><a href=\"" << name << "/\">" << name << "</a></td>\n";
-		obj << "<td>" << ctime(mtime) << "</td>\n"
+		obj << "<td>" << mtime << "</td>\n"
 			"<td>-</td>\n"
 			"</tr>\n";
 		_dirs.push_back(std::make_pair(name, obj.str()));
@@ -88,7 +94,7 @@ class AutoIndexBuilder {
 			"<style>\n"
 			"html { color-scheme: light dark; }\n"
 			"body { width: 35em; margin: 0 auto;\n"
-			"font-family: monospace, Tahoma, Verdana, Arial, sans-serif;" 
+			"font-family: monospace, Tahoma, Verdana, Arial, sans-serif;"
 			"margin-top: 30px}\n"
 			"</style>\n"
 			"</head>\n"
@@ -100,7 +106,9 @@ class AutoIndexBuilder {
 	void	_build_footer() {
 		_source << "<hr />\n"
 			#ifdef WEBSERV_BUILD_COMMIT
-				"<p><em>Autoindexed by " << WEBSERV_SERVER_VERSION << WEBSERV_BUILD_COMMIT << "</em></p>\n"
+				"<p><em>Autoindexed by "
+				<< WEBSERV_SERVER_VERSION
+				<< WEBSERV_BUILD_COMMIT << "</em></p>\n"
 			#else
 				"<p><em>Autoindexed by Webserv</h3></p>\n"
 			#endif
@@ -139,7 +147,7 @@ class AutoIndexBuilder {
 	}
 };
 
-}
-}
+}  // namespace Server
+}  // namespace Webserv
 
 #endif  // SERVER_AUTOINDEX_HPP_

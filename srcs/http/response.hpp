@@ -77,7 +77,8 @@ class Response {
 		return false;
 	}
 
-	bool _dump_files_dir(const std::string path, std::vector<struct dirent> *bucket) {
+	bool _dump_files_dir(const std::string path,
+		std::vector<struct dirent> *bucket) {
 		errno = 0;
 
 		DIR	*dirptr = opendir(path.c_str());
@@ -103,7 +104,8 @@ class Response {
 		return true;
 	}
 
-	bool	_get_index(const Models::ILocation *loc, std::vector<struct dirent> &files) {
+	bool	_get_index(const Models::ILocation *loc,
+		const std::vector<struct dirent> &files) {
 		Models::IBlock::IndexObject indexs;
 		if (loc)
 			indexs = loc->get_indexs();
@@ -114,8 +116,7 @@ class Response {
 
 		Models::IBlock::IndexObject::const_iterator it;
 		for (it = indexs.begin(); it != indexs.end(); it++) {
-
-			std::vector<struct dirent>::iterator	it_file;
+			std::vector<struct dirent>::const_iterator	it_file;
 			for (it_file = files.begin(); it_file != files.end(); it_file++) {
 				if (it_file->d_name == *it) {
 					// return GET_file();
@@ -137,7 +138,7 @@ class Response {
 		return false;
 	}
 
-	bool	_get_autoindex(std::vector<struct dirent>& files, 
+	bool	_get_autoindex(const std::vector<struct dirent>& files,
 		const std::string &path, const std::string &root) {
 		Server::AutoIndexBuilder autoindex(files, root, path);
 		_body = autoindex.toString();
@@ -168,7 +169,7 @@ class Response {
 		}
 
 		switch (db.st_mode & S_IFMT) {
-			case S_IFDIR: 
+			case S_IFDIR:
 				return _get_dir(loc, _req->get_uri());
 			default: {
 				_body = _get_file_content(path);
