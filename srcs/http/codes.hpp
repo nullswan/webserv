@@ -30,7 +30,7 @@ const std::string	generate_status_page(const int &status_code) {
 		"		<style>\n"
 		"			html { color-scheme: light dark; }\n"
 		"			body { width: 35em; margin: 0 auto;\n"
-		"			font-family: Tahoma, Verdana, Arial, sans-serif; }\n"
+		"			font-family: monospace, Tahoma, Verdana, Arial, sans-serif; }\n"
 		"		</style>\n"
 		"		<title>" + ss.str() + " - " + resolve_code(status_code) + "</title>\n"
 		"	</head>\n"
@@ -90,13 +90,14 @@ void init_status_map() {
 	CODES[EXPECTATION_FAILED] = "Expectation Failed";
 	CODES[IM_A_TEAPOT] = "I'm a teapot";
 	CODES[UNPROCESSABLE_ENTITY] = "Unprocessable Entity";
-	CODES[LOCK_EX] = "Locked";
+	CODES[LOCKED] = "Locked";
 	CODES[FAILED_DEPENDENCY] = "Failed Dependency";
 	CODES[UPGRADE_REQUIRED] = "Upgrade Required";
 	CODES[PRECONDITION_REQUIRED] = "Precondition Required";
 	CODES[TOO_MANY_REQUESTS] = "Too Many Requests";
 	CODES[REQUEST_HEADER_FIELDS_TOO_LARGE] = "Request Header Fields Too Large";
 	CODES[UNAVAILABLE_FOR_LEGAL_REASONS] = "Unavailable For Legal Reasons";
+	CODES[INTERNAL_SERVER_ERROR] = "Internal Server Error";
 	CODES[NOT_IMPLEMENTED] = "Not Implemented";
 	CODES[BAD_GATEWAY] = "Bad Gateway";
 	CODES[SERVICE_UNAVAILABLE] = "Service Unavailable";

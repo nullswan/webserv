@@ -14,6 +14,7 @@
 #include "codes.hpp"
 #include "request.hpp"
 #include "../models/IServer.hpp"
+#include "../server/autoindex.hpp"
 
 namespace Webserv {
 namespace HTTP {
@@ -30,6 +31,7 @@ class Response {
 	int _status;
 
 	Request *_req;
+	IServer	*_master;
 
  public:
 	explicit Response(Request *request)
@@ -39,7 +41,8 @@ class Response {
 	:	_status(code), _req(0) {}
 
 	bool	prepare(IServer *master) {
-		if (_req && _status < 400) { invoke(master); }
+		_master = master;
+		if (_req && _status < 400) { invoke(); }
 		if (_status >= 400) {
 			if (_req) {
 				_body = master->get_error_page(_status, _req->get_host(), _req->get_uri());
@@ -59,106 +62,142 @@ class Response {
 	size_t	size() const { return _payload.size(); }
 
  private:
-	void	invoke(IServer *master) {
-		const Models::ILocation	*loc = master->get_location_using_vhosts(
+	void	GET(const Models::ILocation *loc) {
+		_get_file(loc);
+	}
+
+	bool	_get_cgi(const Models::ILocation *loc) {
+		std::string cgi_path;
+		if (loc)
+			cgi_path = loc->get_cgi(_req->get_uri());
+		else
+			cgi_path = _master->get_cgi(_req->get_uri());
+		if (cgi_path != "")
+			std::cout << "[deprecated] appears to be a cgi path" << std::endl;
+		return false;
+	}
+
+	bool _dump_files_dir(const std::string path, std::vector<struct dirent> *bucket) {
+		errno = 0;
+
+		DIR	*dirptr = opendir(path.c_str());
+		if (!dirptr) {
+			_status = 500;
+			if (errno == EACCES)
+				_status = 403;
+			if (errno == ENOENT)
+				_status = 404;
+			return false;
+		}
+
+		struct dirent *file;
+		while ((file = readdir(dirptr))) {
+			if (errno) {
+				_status = 500;
+				closedir(dirptr);
+				return false;
+			}
+			bucket->push_back(*file);
+		}
+		closedir(dirptr);
+		return true;
+	}
+
+	bool	_get_index(const Models::ILocation *loc, std::vector<struct dirent> &files) {
+		Models::IBlock::IndexObject indexs;
+		if (loc)
+			indexs = loc->get_indexs();
+		else
+			indexs = _master->get_indexs();
+		if (indexs.size() <= 0)
+			return false;
+
+		Models::IBlock::IndexObject::const_iterator it;
+		for (it = indexs.begin(); it != indexs.end(); it++) {
+
+			std::vector<struct dirent>::iterator	it_file;
+			for (it_file = files.begin(); it_file != files.end(); it_file++) {
+				if (it_file->d_name == *it) {
+					// return GET_file();
+					// serve file normally, it may be a cgi, so pass it to function
+					// const std::string index_path = real_path + "/" + *it;
+					// int fd = open(index_path.c_str(), O_RDONLY | O_NONBLOCK);
+					// if (fd == -1) {
+					// 	_status = 500;
+					// 	if (errno == EACCES)
+					// 		_status = 403;
+					// } else {
+					// 	_body = get_file_content(fd);
+					// 	_status = 200;
+					// }
+					// return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	bool	_get_autoindex(std::vector<struct dirent>& files, 
+		const std::string &path, const std::string &root) {
+		Server::AutoIndexBuilder autoindex(files, root, path);
+		_body = autoindex.toString();
+		_status = 200;
+		return true;
+	}
+
+	bool	_get_file(const Models::ILocation *loc) {
+		_get_cgi(loc);
+
+		struct stat db;
+		std::string path;
+		if (!loc)
+			path = _master->get_root();
+		else
+			path = loc->get_root();
+		path += _req->get_uri();
+
+		if (_req->get_uri()[_req->get_uri().size() - 1] == '/')
+			return _get_dir(loc, path);
+
+		errno = 0;
+		if (stat(path.c_str(), &db) == -1) {
+			_status = 500;
+			if (errno == ENOENT || errno == ENOTDIR)
+				_status = 404;
+			return true;
+		}
+
+		switch (db.st_mode & S_IFMT) {
+			case S_IFDIR: 
+				return _get_dir(loc, _req->get_uri());
+			default: {
+				_body = _get_file_content(path);
+				return true;
+			}
+		}
+		_status = 404;
+		return true;
+	}
+
+	bool	_get_dir(const Models::ILocation *loc, const std::string path) {
+		std::vector<struct dirent> files;
+		if (!_dump_files_dir(path, &files))
+			return false;
+		if (_get_index(loc, files))
+			return true;
+		if (loc && loc->get_autoindex())
+			return _get_autoindex(files, _req->get_uri(), loc->get_root());
+		else if (!loc && _master->get_autoindex())
+			return _get_autoindex(files, _req->get_uri(), _master->get_root());
+		return false;
+	}
+
+	void	invoke() {
+		const Models::ILocation	*loc = _master->get_location_using_vhosts(
 			_req->get_host(), _req->get_uri());
 
-		if (_req->get_method() == METH_GET) {
-			std::string cgi_path;
-			if (loc)
-				cgi_path = loc->get_cgi(_req->get_uri());
-			else
-				cgi_path = master->get_cgi(_req->get_uri());
-			if (cgi_path != "")
-				std::cout << "[deprecated] appears to be a cgi path" << std::endl;
-				// return _handle_cgi();
-
-			struct stat db;
-			std::string real_path;
-			if (!loc)
-				real_path = master->get_root();
-			else
-				real_path = loc->get_root();
-			real_path += _req->get_uri();
-			errno = 0;
-			if (stat(real_path.c_str(), &db) == -1) {
-				_status = 500;
-				if (errno == ENOENT || errno == ENOTDIR)
-					_status = 404;
-				return;
-			}
-
-			switch (db.st_mode & S_IFMT) {
-				case S_IFDIR: {
-					errno = 0;
-
-					DIR*			dir_ptr = opendir(real_path.c_str());
-					if (dir_ptr == NULL) {
-						_status = 500;
-						if (errno == EACCES)
-							_status = 403;
-						return;
-					}
-
-					errno = 0;
-					struct dirent	*file;
-					std::vector<struct dirent> files;
-					while ((file = readdir(dir_ptr))) {
-						if (errno) {
-							_status = 500;
-							closedir(dir_ptr);
-							return;
-						}
-						files.push_back(*file);
-					}
-					closedir(dir_ptr);
-
-					Models::IBlock::IndexObject indexs_addr;
-					if (loc)
-						indexs_addr = loc->get_indexs();
-					else
-						indexs_addr = master->get_indexs();
-
-					// attempt index
-					Models::IBlock::IndexObject::const_iterator it;
-					for (it = indexs_addr.begin(); it != indexs_addr.end(); it++) {
-						std::vector<struct dirent>::iterator	it_file;
-						for (it_file = files.begin(); it_file != files.end(); it_file++) {
-							if (it_file->d_name == *it) {
-								const std::string index_path = real_path + "/" + *it;
-								int fd = open(index_path.c_str(), O_RDONLY | O_NONBLOCK);
-								if (fd == -1) {
-									_status = 500;
-									if (errno == EACCES)
-										_status = 403;
-								} else {
-									_body = get_file_content(fd);
-									_status = 200;
-								}
-								return;
-							}
-						}
-					}
-					// if allowed, attempt autoindex
-					// otherwise pass file vector to start autoindex
-					break;
-				}
-				default:
-					errno = 0;
-
-					int fd = open(real_path.c_str(), O_RDONLY | O_NONBLOCK);
-					if (fd == -1) {
-						_status = 500;
-						if (errno == EACCES)
-							_status = 403;
-					} else {
-						_body = get_file_content(fd);
-						_status = 200;
-					}
-					return;
-			}
-			_status = 404;
-		}
+		if (_req->get_method() == METH_GET)
+			GET(loc);
 		// else if (_req->get_method() == METH_POST)
 		// else if (_req->get_method() == METH_DELETE)
 		// else
@@ -203,13 +242,20 @@ class Response {
 		return ss.str();
 	}
 
-	std::string get_file_content(int fd) {
-		std::stringstream ss;
-		char buf[1024];
-		ssize_t n;
-		while ((n = read(fd, buf, sizeof(buf))) > 0) {
-			ss.write(buf, n);
+	std::string _get_file_content(const std::string &path) {
+		int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
+		if (fd == -1) {
+			_status = 500;
+			if (errno == EACCES)
+				_status = 403;
+			return "";
 		}
+
+		ssize_t n;
+		char buf[1024];
+		std::stringstream ss;
+		while ((n = read(fd, buf, sizeof(buf))) > 0)
+			ss.write(buf, n);
 		close(fd);
 		return ss.str();
 	}

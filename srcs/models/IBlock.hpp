@@ -6,6 +6,9 @@
 #ifndef MODELS_IBLOCK_HPP_
 #define MODELS_IBLOCK_HPP_
 
+#include <unistd.h>
+#include <limits.h>
+
 #include <map>
 #include <vector>
 #include <string>
@@ -41,7 +44,7 @@ class IBlock {
 
  public:
 	IBlock()
-	: 	_root(""),
+	: 	_root(WEBSERV_DEFAULT_ROOT_DIR),
 		_upload_pass(""),
 		_redirection(""),
 		_body_limit(1000000),
@@ -49,6 +52,9 @@ class IBlock {
 		_indexs(),
 		_error_pages(),
 		_cgi() {
+		char cwd[PATH_MAX + 1];
+		if (getcwd(cwd, sizeof(cwd)) != NULL)
+			_root = cwd;
 		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++) {
 			_methods_allowed[i] = true;
 		}
