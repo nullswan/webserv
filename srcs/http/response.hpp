@@ -103,22 +103,23 @@ class Response {
 					errno = 0;
 					struct dirent	*file;
 					std::vector<struct dirent> files;
-					// put each files to a vector using readdir
 					while ((file = readdir(dir_ptr))) {
 						if (errno) {
 							_status = 500;
+							closedir(dir_ptr);
 							return;
 						}
 						files.push_back(*file);
 					}
+					closedir(dir_ptr);
 
-					// attempt to find index in file vector
 					Models::IBlock::IndexObject indexs_addr;
 					if (loc)
 						indexs_addr = loc->get_indexs();
 					else
 						indexs_addr = master->get_indexs();
 
+					// attempt index
 					Models::IBlock::IndexObject::const_iterator it;
 					for (it = indexs_addr.begin(); it != indexs_addr.end(); it++) {
 						std::vector<struct dirent>::iterator	it_file;
@@ -138,11 +139,8 @@ class Response {
 							}
 						}
 					}
-
+					// if allowed, attempt autoindex
 					// otherwise pass file vector to start autoindex
-
-					// attempt index
-					// attempt autoindex if allowed
 					break;
 				}
 				default:

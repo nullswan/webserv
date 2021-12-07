@@ -35,6 +35,10 @@ static const char DEFAULT_CONF_FILE[] = "server {\n"
 "		index ping.html;\n"
 "		allowed_methods GET;\n"
 "	}\n"
+"	location /files {\n"
+"		autoindex	on;\n"
+"		root tests/www/html/;\n"
+"	}\n"
 "\n"
 "}";
 
