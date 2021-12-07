@@ -120,9 +120,11 @@ class Response {
 			for (it_file = files.begin(); it_file != files.end(); it_file++) {
 				if (it_file->d_name == *it) {
 					if (loc)
-						return _get_file_path(loc, loc->get_root() + it_file->d_name);
+						return _get_file_path(loc, loc->get_root()
+							+ loc->get_path() + "/" + it_file->d_name);
 					else
-						return _get_file_path(loc, _master->get_root() + it_file->d_name);
+						return _get_file_path(loc, _master->get_root()
+							+ "/" + it_file->d_name);
 				}
 			}
 		}
@@ -141,11 +143,13 @@ class Response {
 		std::string path;
 		if (!loc) {
 			if (_master->get_redirection() != "")
-				return _get_redirection(_master->get_redirection(), _master->get_redirection_code());
+				return _get_redirection(_master->get_redirection(),
+					_master->get_redirection_code());
 			path = _master->get_root();
 		} else {
 			if (loc->get_redirection() != "")
-				return _get_redirection(loc->get_redirection(), loc->get_redirection_code());
+				return _get_redirection(loc->get_redirection(),
+					loc->get_redirection_code());
 			path = loc->get_root();
 		}
 		path += _req->get_uri();
@@ -161,7 +165,7 @@ class Response {
 	bool	_get_file_path(const Models::ILocation *loc, const std::string &path) {
 		_get_cgi(loc);
 
-		if (_req->get_uri()[_req->get_uri().size() - 1] == '/')
+		if (path[path.size() - 1] == '/')
 			return _get_dir(loc, path);
 
 		errno = 0;
