@@ -63,32 +63,50 @@ class Response {
 
  private:
 	void	GET(const Models::ILocation *loc) {
-		std::string path;
-		if (!loc) {
-			if (_master->get_method(METH_GET) == false) {
-				_status = 403;
-				return;
-			}
-			if (_master->get_redirection() != "") {
-				_get_redirection(_master->get_redirection(),
-					_master->get_redirection_code());
-				return;
-			}
-			path = _master->get_root();
-		} else {
-			if (loc->get_method(METH_GET) == false) {
-				_status = 403;
-				return;
-			}
+		std::string path = _build_method_path(loc, METH_GET, false);
+		if (path == "")
+			return;
+		if (loc) {
 			if (loc->get_redirection() != "") {
 				_get_redirection(loc->get_redirection(),
 					loc->get_redirection_code());
 				return;
 			}
-			path = loc->get_root();
+		} else {
+			if (_master->get_redirection() != "") {
+				_get_redirection(_master->get_redirection(),
+					_master->get_redirection_code());
+				return;
+			}
 		}
-		path += _req->get_uri();
 		_get_file_path(loc, path);
+	}
+
+	std::string _build_method_path(const Models::ILocation *loc,
+		METHODS method, bool upload_pass) {
+		std::string path;
+
+		if (loc) {
+			if (loc->get_method(method) == false) {
+				_status = 403;
+				return "";
+			}
+			if (upload_pass && loc->get_upload_pass() != "")
+				path = loc->get_upload_pass();
+			else
+				path = loc->get_root();
+		} else {
+			if (_master->get_method(method) == false) {
+				_status = 403;
+				return "";
+			}
+			if (upload_pass && _master->get_upload_pass() != "")
+				path = _master->get_upload_pass();
+			else
+				path = _master->get_root();
+		}
+
+		return path + _req->get_uri();
 	}
 
 	bool	_get_cgi(const Models::ILocation *loc) {
@@ -206,28 +224,9 @@ class Response {
 	}
 
 	void	DELETE(const Models::ILocation *loc) {
-		std::string path;
-		if (!loc) {
-			if (_master->get_method(METH_DELETE) == false) {
-				_status = 403;
-				return;
-			}
-			if (_master->get_upload_pass() != "")
-				path = _master->get_upload_pass();
-			else
-				path = _master->get_root();
-		} else {
-			if (loc->get_method(METH_DELETE) == false) {
-				_status = 403;
-				return;
-			}
-			if (loc->get_upload_pass() != "")
-				path = loc->get_upload_pass();
-			else
-				path = loc->get_root();
-		}
-		path += _req->get_uri();
-
+		std::string path = _build_method_path(loc, METH_DELETE, true);
+		if (path == "")
+			return;
 		errno = 0;
 		if (remove(path.c_str()) == -1) {
 			_status = 500;
