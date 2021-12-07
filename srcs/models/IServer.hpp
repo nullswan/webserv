@@ -137,8 +137,14 @@ class IServer : public Webserv::Models::IBlock {
 	int vhosts_size() const { return _vhosts.size(); }
 	const IServer *get_vhost(const std::string &host) const {
 		if (_vhosts.size() > 0) {
-			VHostsObject::const_iterator it = _vhosts.find(host);
-			if (it != _vhosts.end())
+			std::string real_host = host;
+			int port = -1;
+			if (real_host.find(':') != std::string::npos) {
+				real_host = real_host.substr(0, real_host.find(':'));
+				port = atoi(host.substr(host.find(':') + 1).c_str());
+			}
+			VHostsObject::const_iterator it = _vhosts.find(real_host);
+			if (it != _vhosts.end() && (port == -1 || port == it->second->get_port()))
 				return it->second;
 		}
 		return this;
