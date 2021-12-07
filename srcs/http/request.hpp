@@ -202,7 +202,6 @@ class Request {
 		if (uri_separator_pos > 8192)
 			return _invalid_request(REQUEST_URI_TOO_LONG);
 		_uri = _raw_request.substr(0, uri_separator_pos);
-		_strtolower(&_uri);
 		if (_uri == "" || _uri.find("/") != 0)
 			return _invalid_request(BAD_REQUEST);
 		_raw_request.erase(0, uri_separator_pos + 1);

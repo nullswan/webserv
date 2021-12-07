@@ -63,7 +63,7 @@ class Response {
 
  private:
 	void	GET(const Models::ILocation *loc) {
-		_get_file(loc);
+		_get_file_location(loc);
 	}
 
 	bool	_get_cgi(const Models::ILocation *loc) {
@@ -119,19 +119,10 @@ class Response {
 			std::vector<struct dirent>::const_iterator	it_file;
 			for (it_file = files.begin(); it_file != files.end(); it_file++) {
 				if (it_file->d_name == *it) {
-					// return GET_file();
-					// serve file normally, it may be a cgi, so pass it to function
-					// const std::string index_path = real_path + "/" + *it;
-					// int fd = open(index_path.c_str(), O_RDONLY | O_NONBLOCK);
-					// if (fd == -1) {
-					// 	_status = 500;
-					// 	if (errno == EACCES)
-					// 		_status = 403;
-					// } else {
-					// 	_body = get_file_content(fd);
-					// 	_status = 200;
-					// }
-					// return true;
+					if (loc)
+						return _get_file_path(loc, loc->get_root() + it_file->d_name);
+					else
+						return _get_file_path(loc, _master->get_root() + it_file->d_name);
 				}
 			}
 		}
@@ -146,21 +137,35 @@ class Response {
 		return true;
 	}
 
-	bool	_get_file(const Models::ILocation *loc) {
-		_get_cgi(loc);
-
-		struct stat db;
+	bool	_get_file_location(const Models::ILocation *loc) {
 		std::string path;
-		if (!loc)
+		if (!loc) {
+			if (_master->get_redirection() != "")
+				return _get_redirection(_master->get_redirection(), _master->get_redirection_code());
 			path = _master->get_root();
-		else
+		} else {
+			if (loc->get_redirection() != "")
+				return _get_redirection(loc->get_redirection(), loc->get_redirection_code());
 			path = loc->get_root();
+		}
 		path += _req->get_uri();
+		return _get_file_path(loc, path);
+	}
+
+	bool	_get_redirection(const std::string &path, const int &code) {
+		_status = code;
+		_headers["Location"] = path;
+		return true;
+	}
+
+	bool	_get_file_path(const Models::ILocation *loc, const std::string &path) {
+		_get_cgi(loc);
 
 		if (_req->get_uri()[_req->get_uri().size() - 1] == '/')
 			return _get_dir(loc, path);
 
 		errno = 0;
+		struct stat db;
 		if (stat(path.c_str(), &db) == -1) {
 			_status = 500;
 			if (errno == ENOENT || errno == ENOTDIR)
@@ -201,10 +206,8 @@ class Response {
 			GET(loc);
 		// else if (_req->get_method() == METH_POST)
 		// else if (_req->get_method() == METH_DELETE)
-		// else
-			// prob stand for request not allowed
-			// ie not authorized
-			// else 501
+		else
+			_status = 501;
 	}
 
 	std::string _prepare_headers() {
