@@ -19,6 +19,7 @@ class IBlock {
  public:
 	typedef std::map<int, std::string> 			ErrorPagesObject;
 	typedef std::map<std::string, std::string>	CGIObject;
+	typedef std::vector<std::string>			IndexObject;
 
  protected:
 	std::string _name;
@@ -34,7 +35,7 @@ class IBlock {
 	bool 		_methods_allowed[WEBSERV_METHODS_SUPPORTED];
 	bool 		_autoindex;
 
-	std::vector<std::string> _indexs;
+	IndexObject 		_indexs;
 	ErrorPagesObject	_error_pages;
 	CGIObject			_cgi;
 
@@ -92,7 +93,7 @@ class IBlock {
 	bool get_autoindex() const { return _autoindex; }
 
 	// Index(s)
-	const std::vector<std::string> &get_indexs() const { return _indexs; }
+	const IndexObject &get_indexs() const { return _indexs; }
 	void							add_index(const std::string &index) {
 		_indexs.push_back(index);
 	}

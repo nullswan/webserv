@@ -3,10 +3,12 @@
 
 #include <unistd.h>
 #include <string.h>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 
 #include <map>
+#include <vector>
 #include <string>
 
 #include "codes.hpp"
@@ -71,37 +73,91 @@ class Response {
 				std::cout << "[deprecated] appears to be a cgi path" << std::endl;
 				// return _handle_cgi();
 
-			struct stat db;  // refer to man stat
+			struct stat db;
 			std::string real_path;
 			if (!loc)
 				real_path = master->get_root();
 			else
 				real_path = loc->get_root();
 			real_path += _req->get_uri();
+			errno = 0;
 			if (stat(real_path.c_str(), &db) == -1) {
-				_status = 404;
+				_status = 500;
+				if (errno == ENOENT || errno == ENOTDIR)
+					_status = 404;
 				return;
 			}
 
 			switch (db.st_mode & S_IFMT) {
 				case S_IFDIR: {
-					std::cout << "is_dir" << std::endl;
+					errno = 0;
+
+					DIR*			dir_ptr = opendir(real_path.c_str());
+					if (dir_ptr == NULL) {
+						_status = 500;
+						if (errno == EACCES)
+							_status = 403;
+						return;
+					}
+
+					errno = 0;
+					struct dirent	*file;
+					std::vector<struct dirent> files;
+					// put each files to a vector using readdir
+					while ((file = readdir(dir_ptr))) {
+						if (errno) {
+							_status = 500;
+							return;
+						}
+						files.push_back(*file);
+					}
+
+					// attempt to find index in file vector
+					Models::IBlock::IndexObject indexs_addr;
+					if (loc)
+						indexs_addr = loc->get_indexs();
+					else
+						indexs_addr = master->get_indexs();
+
+					Models::IBlock::IndexObject::const_iterator it;
+					for (it = indexs_addr.begin(); it != indexs_addr.end(); it++) {
+						std::vector<struct dirent>::iterator	it_file;
+						for (it_file = files.begin(); it_file != files.end(); it_file++) {
+							if (it_file->d_name == *it) {
+								const std::string index_path = real_path + "/" + *it;
+								int fd = open(index_path.c_str(), O_RDONLY | O_NONBLOCK);
+								if (fd == -1) {
+									_status = 500;
+									if (errno == EACCES)
+										_status = 403;
+								} else {
+									_body = get_file_content(fd);
+									_status = 200;
+								}
+								return;
+							}
+						}
+					}
+
+					// otherwise pass file vector to start autoindex
+
 					// attempt index
-					// attempt autoindex
-					break;
-				}
-				case S_IFLNK: {
-					std::cout << "is_symlink" << std::endl;
-					// resolve
-					break;
-				}
-				case S_IFREG: {
-					std::cout << "is_file" << std::endl;
-					// stream
+					// attempt autoindex if allowed
 					break;
 				}
 				default:
-					_status = 500;
+					errno = 0;
+
+					int fd = open(real_path.c_str(), O_RDONLY | O_NONBLOCK);
+					if (fd == -1) {
+						_status = 500;
+						if (errno == EACCES)
+							_status = 403;
+					} else {
+						_body = get_file_content(fd);
+						_status = 200;
+					}
+					return;
 			}
 			_status = 404;
 		}
@@ -146,6 +202,17 @@ class Response {
 	static std::string _toString(size_t size) {
 		std::stringstream ss;
 		ss << size;
+		return ss.str();
+	}
+
+	std::string get_file_content(int fd) {
+		std::stringstream ss;
+		char buf[1024];
+		ssize_t n;
+		while ((n = read(fd, buf, sizeof(buf))) > 0) {
+			ss.write(buf, n);
+		}
+		close(fd);
 		return ss.str();
 	}
 };
