@@ -63,7 +63,32 @@ class Response {
 
  private:
 	void	GET(const Models::ILocation *loc) {
-		_get_file_location(loc);
+		std::string path;
+		if (!loc) {
+			if (_master->get_method(METH_GET) == false) {
+				_status = 403;
+				return;
+			}
+			if (_master->get_redirection() != "") {
+				_get_redirection(_master->get_redirection(),
+					_master->get_redirection_code());
+				return;
+			}
+			path = _master->get_root();
+		} else {
+			if (loc->get_method(METH_GET) == false) {
+				_status = 403;
+				return;
+			}
+			if (loc->get_redirection() != "") {
+				_get_redirection(loc->get_redirection(),
+					loc->get_redirection_code());
+				return;
+			}
+			path = loc->get_root();
+		}
+		path += _req->get_uri();
+		_get_file_path(loc, path);
 	}
 
 	bool	_get_cgi(const Models::ILocation *loc) {
@@ -84,7 +109,7 @@ class Response {
 		DIR	*dirptr = opendir(path.c_str());
 		if (!dirptr) {
 			_status = 500;
-			if (errno == EACCES)
+			if (errno == EACCES || errno == EPERM)
 				_status = 403;
 			if (errno == ENOENT)
 				_status = 404;
@@ -131,23 +156,6 @@ class Response {
 		_body = autoindex.toString();
 		_status = 200;
 		return true;
-	}
-
-	bool	_get_file_location(const Models::ILocation *loc) {
-		std::string path;
-		if (!loc) {
-			if (_master->get_redirection() != "")
-				return _get_redirection(_master->get_redirection(),
-					_master->get_redirection_code());
-			path = _master->get_root();
-		} else {
-			if (loc->get_redirection() != "")
-				return _get_redirection(loc->get_redirection(),
-					loc->get_redirection_code());
-			path = loc->get_root();
-		}
-		path += _req->get_uri();
-		return _get_file_path(loc, path);
 	}
 
 	bool	_get_redirection(const std::string &path, const int &code) {
@@ -197,6 +205,41 @@ class Response {
 		return false;
 	}
 
+	void	DELETE(const Models::ILocation *loc) {
+		std::string path;
+		if (!loc) {
+			if (_master->get_method(METH_DELETE) == false) {
+				_status = 403;
+				return;
+			}
+			if (_master->get_upload_pass() != "")
+				path = _master->get_upload_pass();
+			else
+				path = _master->get_root();
+		} else {
+			if (loc->get_method(METH_DELETE) == false) {
+				_status = 403;
+				return;
+			}
+			if (loc->get_upload_pass() != "")
+				path = loc->get_upload_pass();
+			else
+				path = loc->get_root();
+		}
+		path += _req->get_uri();
+
+		errno = 0;
+		if (remove(path.c_str()) == -1) {
+			_status = 500;
+			if (errno == ENOENT || errno == ENOTDIR)
+				_status = 404;
+			else if (errno == EACCES || errno == EPERM || errno == 39)
+				_status = 403;
+			return;
+		}
+		_status = 204;
+	}
+
 	void	invoke() {
 		const Models::ILocation	*loc = _master->get_location_using_vhosts(
 			_req->get_host(), _req->get_uri());
@@ -204,7 +247,8 @@ class Response {
 		if (_req->get_method() == METH_GET)
 			GET(loc);
 		// else if (_req->get_method() == METH_POST)
-		// else if (_req->get_method() == METH_DELETE)
+		else if (_req->get_method() == METH_DELETE)
+			DELETE(loc);
 		else
 			_status = 501;
 	}
