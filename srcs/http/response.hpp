@@ -229,9 +229,8 @@ class Response {
 
 		std::string headers;
 		HeadersObject::iterator it = _headers.begin();
-		for (; it != _headers.end(); ++it) {
+		for (; it != _headers.end(); ++it) 
 			headers += it->first + ": " + it->second + "\r\n";
-		}
 
 		return head.str() + headers + "\r\n";
 	}

@@ -68,9 +68,9 @@ class AutoIndexBuilder {
 		const size_t size) {
 		std::stringstream obj;
 
-		obj << "<tr>\n";
-		obj << "<td><a href=\"" << name << "\">" << name << "</a></td>\n";
-		obj << "<td>" << mtime << "</td>\n"
+		obj << "<tr>\n"
+			"<td><a href=\"" << name << "\">" << name << "</a></td>\n"
+			"<td>" << mtime << "</td>\n"
 			"<td>" << size << "</td>\n"
 			"</tr>\n";
 		_files.push_back(std::make_pair(name, obj.str()));
@@ -79,9 +79,9 @@ class AutoIndexBuilder {
 	void	_build_row_dir(const std::string &name, const std::string &mtime) {
 		std::stringstream obj;
 
-		obj << "<tr>\n";
-		obj << "<td><a href=\"" << name << "/\">" << name << "</a></td>\n";
-		obj << "<td>" << mtime << "</td>\n"
+		obj << "<tr>\n"
+			"<td><a href=\"" << name << "/\">" << name << "</a></td>\n"
+			"<td>" << mtime << "</td>\n"
 			"<td>-</td>\n"
 			"</tr>\n";
 		_dirs.push_back(std::make_pair(name, obj.str()));
