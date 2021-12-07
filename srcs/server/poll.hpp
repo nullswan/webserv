@@ -14,12 +14,12 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "instance.hpp"
-#include "../consts.hpp"
-#include "../http/enums.hpp"
-#include "../http/codes.hpp"
-#include "../http/client.hpp"
-#include "../models/IServer.hpp"
+#include "consts.hpp"
+#include "http/enums.hpp"
+#include "http/codes.hpp"
+#include "http/client.hpp"
+#include "models/IServer.hpp"
+#include "server/instance.hpp"
 
 namespace Webserv {
 namespace Server {

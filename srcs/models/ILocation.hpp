@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "IBlock.hpp"
+#include "models/IBlock.hpp"
 
 namespace Webserv {
 namespace Models {

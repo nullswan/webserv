@@ -1,6 +1,7 @@
 #ifndef HTTP_CLIENT_HPP_
 #define HTTP_CLIENT_HPP_
 
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <arpa/inet.h>
@@ -12,11 +13,11 @@
 #include <string>
 #include <sstream>
 
-#include "enums.hpp"
-#include "request.hpp"
-#include "response.hpp"
-#include "../consts.hpp"
-#include "../models/IServer.hpp"
+#include "consts.hpp"
+#include "http/enums.hpp"
+#include "http/request.hpp"
+#include "http/response.hpp"
+#include "models/IServer.hpp"
 
 namespace Webserv {
 namespace HTTP {

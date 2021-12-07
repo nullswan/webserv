@@ -9,8 +9,8 @@
 
 #include <string>
 
-#include "../consts.hpp"
-#include "../models/IServer.hpp"
+#include "consts.hpp"
+#include "models/IServer.hpp"
 
 namespace Webserv {
 namespace Server {

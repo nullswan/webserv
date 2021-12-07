@@ -21,12 +21,12 @@
 #include <sstream>
 #include <iostream>
 
-#include "enums.hpp"
-#include "errors.hpp"
-#include "../http/enums.hpp"
-#include "../http/utils.hpp"
-#include "../models/IServer.hpp"
-#include "../models/ILocation.hpp"
+#include "conf/enums.hpp"
+#include "conf/errors.hpp"
+#include "http/enums.hpp"
+#include "http/utils.hpp"
+#include "models/IServer.hpp"
+#include "models/ILocation.hpp"
 
 namespace Webserv {
 namespace Conf {

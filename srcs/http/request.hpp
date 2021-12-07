@@ -7,8 +7,8 @@
 #include <string>
 #include <iostream>
 
-#include "enums.hpp"
-#include "utils.hpp"
+#include "http/enums.hpp"
+#include "http/utils.hpp"
 
 namespace Webserv {
 namespace HTTP {

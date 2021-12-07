@@ -11,10 +11,10 @@
 #include <vector>
 #include <string>
 
-#include "codes.hpp"
-#include "request.hpp"
-#include "../models/IServer.hpp"
-#include "../server/autoindex.hpp"
+#include "http/codes.hpp"
+#include "http/request.hpp"
+#include "models/IServer.hpp"
+#include "server/autoindex.hpp"
 
 namespace Webserv {
 namespace HTTP {

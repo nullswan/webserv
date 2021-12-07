@@ -11,8 +11,8 @@
 #include <memory>
 #include <utility>
 
-#include "IBlock.hpp"
-#include "ILocation.hpp"
+#include "models/IBlock.hpp"
+#include "models/ILocation.hpp"
 
 
 namespace Webserv {

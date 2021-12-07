@@ -14,7 +14,7 @@
 #include <string>
 #include <utility>
 
-#include "../consts.hpp"
+#include "consts.hpp"
 
 namespace Webserv {
 namespace Models {

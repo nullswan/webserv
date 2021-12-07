@@ -6,7 +6,7 @@
 #include <string>
 #include <sstream>
 
-#include "enums.hpp"
+#include "http/enums.hpp"
 
 namespace Webserv {
 namespace HTTP {
