@@ -72,7 +72,7 @@ class Response {
 		std::string path = _build_method_path(block, METH_GET, false);
 		if (path == "")
 			return;
-		
+
 		if (block->get_redirection() != "")
 			return (void)_do_redirection(block);
 
