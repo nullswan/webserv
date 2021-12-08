@@ -101,6 +101,9 @@ class Poll {
 
  private:
 	void	_garbage_collector() {
+		#ifndef WEBSERV_BENCHMARK
+			_handle_expired_sessions();
+		#endif
 		_handle_expired_clients();
 	}
 
@@ -239,6 +242,12 @@ class Poll {
 				return _handle_expired_clients();
 			}
 		}
+	}
+
+	void	_handle_expired_sessions() const {
+		InstanceObject::const_iterator it = _instances.begin();
+		for (; it != _instances.end(); it++)
+			it->second->expired_sessions();
 	}
 
 	void	_delete_client(int ev_fd, HTTP::Client *client) {

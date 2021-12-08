@@ -22,12 +22,15 @@ namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
 	typedef std::map<std::string, std::string>		HeadersObject;
+	typedef std::vector<std::string>				SetCookieJar;
 
  private:
 	std::string _body;
 	std::string _payload;
 
 	HeadersObject _headers;
+
+	SetCookieJar	_set_cookies;
 
 	int _status;
 
@@ -68,6 +71,12 @@ class Response {
 	void	set_status(int status) { _status = status; }
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
+	void	add_header(const std::string &key, const std::string &value) {
+		if (key == "Set-Cookie")
+			_set_cookies.push_back(value);
+		else
+			_headers[key] = value;
+	}
 
  private:
 	void	GET(const Models::IBlock *block) {
@@ -248,9 +257,12 @@ class Response {
 		head << "HTTP/1.1 " << _status << " " << resolve_code(_status) << "\r\n";
 
 		std::string headers;
-		HeadersObject::iterator it = _headers.begin();
-		for (; it != _headers.end(); ++it)
+		for (HeadersObject::iterator it = _headers.begin();
+			it != _headers.end(); ++it)
 			headers += it->first + ": " + it->second + "\r\n";
+		for (SetCookieJar::iterator it = _set_cookies.begin();
+			it != _set_cookies.end(); ++it)
+			headers += "Set-Cookie: " + *it + "\r\n";
 
 		return head.str() + headers + "\r\n";
 	}

@@ -118,7 +118,12 @@ class Request {
 	const std::string get_uri() const { return _uri; }
 	const std::string get_host() const { return _host; }
 	bool		get_header_status() const { return _headers_ready; }
-
+	const std::string get_header_value(const std::string &headerName) const {
+		HeadersObject::const_iterator it = _headers.find(headerName);
+		if (it != _headers.end())
+			return it->second;
+		return "";
+	}
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;

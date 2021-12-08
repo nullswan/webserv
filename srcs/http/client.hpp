@@ -31,6 +31,7 @@ class Client {
 	struct sockaddr_in	_addr;
 	socklen_t 			_addr_len;
 
+	std::string		_sess_id;
 	std::string 	_ip;
 	int				_fd;
 	struct timeval 	ping;
@@ -96,17 +97,60 @@ class Client {
 		if (resp)
 			delete resp;
 		resp = new Response(req);
+		#ifndef WEBSERV_BENCHMARK
+			_manage_cookie_jar();
+		#endif
 		resp->prepare(_master);
+		#ifndef WEBSERV_BENCHMARK
+			_gather_cookie_jar();
+		#endif
 		send(_fd, resp->toString(), resp->size(), 0);
 		return _close();
 	}
 
-	int	get_fd() const { return _fd; }
+	int		get_fd() const { return _fd; }
 	bool	is_expired(time_t now) const {
 		return (now - ping.tv_sec) > WEBSERV_CLIENT_TIMEOUT;
 	}
 
  private:
+	bool	_session_openned() const {
+		return _sess_id != "";
+	}
+
+	const std::string &_open_session() {
+		const std::string req_cookies = req->get_header_value("Cookie");
+		if (req_cookies.find("WEBSERV_SID=") != std::string::npos) {
+			_sess_id = req_cookies.substr(req_cookies.find("WEBSERV_SID=") + 13);
+			Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
+			if (cookies != NULL)
+				return _sess_id;
+		}
+
+		_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
+		while (!_master->add_session(_sess_id))
+			_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
+		resp->add_header("Set-Cookie", "WEBSERV_SID=" + _sess_id + "; path=/");
+		return _sess_id;
+	}
+
+	void	_manage_cookie_jar() {
+		if (!_session_openned())
+			_open_session();
+		Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
+		if (!cookies) {
+			_open_session();
+		} else {
+			Models::IServer::CookieJar::iterator it;
+			for (it = cookies->begin(); it != cookies->end(); ++it)
+				resp->add_header(it->first, it->second);
+		}
+	}
+
+	void	_gather_cookie_jar() const {
+		// parser cgi return to get Set-Cookies
+	}
+
 	READ	_request_status() {
 		bool header_status = req->get_header_status();
 		const std::string request = req->get_raw_request();

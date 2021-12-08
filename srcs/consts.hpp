@@ -9,4 +9,7 @@
 #define WEBSERV_SERVER_VERSION		"Webserv/v1.0"
 #define WEBSERV_DEFAULT_ROOT_DIR	"tests/www/html"
 
+#define WEBSERV_SESSION_ID_LENGTH 	32
+#define WEBSERV_SESSION_TIMEOUT	600
+
 #endif  // CONSTS_HPP_

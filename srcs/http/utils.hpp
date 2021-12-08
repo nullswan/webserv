@@ -1,6 +1,9 @@
 #ifndef HTTP_UTILS_HPP_
 #define HTTP_UTILS_HPP_
 
+#include <unistd.h>
+#include <sys/time.h>
+
 #include <string>
 #include <sstream>
 
@@ -100,6 +103,25 @@ static const std::string color_code(const STATUS_CODE &status_code) {
 		return "\033[0;41;37m " + code.str() + " \033[0m";
 	return " ? ";
 }
+
+std::string rand_string(const int len) {
+	static const char alphanum[] =
+		"0123456789"
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz";
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+
+	srand((unsigned)time(NULL) * tv.tv_usec);
+
+	std::string ret;
+	ret.reserve(len);
+
+	for (int i = 0; i < len; ++i)
+		ret += alphanum[rand() % (sizeof(alphanum) - 1)];
+	return ret;
+}
+
 }  // namespace HTTP
 }  // namespace Webserv
 
