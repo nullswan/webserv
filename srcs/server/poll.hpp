@@ -76,7 +76,7 @@ class Poll {
 					continue;
 				}
 				if (events[i].events & EPOLLERR || events[i].events & EPOLLHUP) {
-					close(ev_fd);
+					_handle_aborted(ev_fd);
 					continue;
 				}
 				if (events[i].events & EPOLLIN) {
@@ -102,7 +102,7 @@ class Poll {
  private:
 	void	_garbage_collector() {
 		#ifndef WEBSERV_BENCHMARK
-			_handle_expired_sessions();
+			_collect_expired_sessions();
 		#endif
 		_handle_expired_clients();
 	}
@@ -214,6 +214,7 @@ class Poll {
 			return _delete_client(ev_fd, client);
 		return _change_epoll_state(ev_fd, EPOLLIN);
 	}
+
 	void	_handle_stdin() {
 		std::string line;
 
@@ -230,6 +231,14 @@ class Poll {
 			}
 		#endif
 	}
+
+	void	_handle_aborted(int ev_fd) {
+		if (_clients.find(ev_fd) != _clients.end())
+			_delete_client(ev_fd, _clients[ev_fd]);
+		else
+			close(ev_fd);
+	}
+
 	void	_handle_expired_clients() {
 		struct timeval now;
 		gettimeofday(&now, NULL);
@@ -244,10 +253,10 @@ class Poll {
 		}
 	}
 
-	void	_handle_expired_sessions() const {
+	void	_collect_expired_sessions() const {
 		InstanceObject::const_iterator it = _instances.begin();
 		for (; it != _instances.end(); it++)
-			it->second->expired_sessions();
+			it->second->gbc_sessions();
 	}
 
 	void	_delete_client(int ev_fd, HTTP::Client *client) {
