@@ -93,6 +93,10 @@ class IBlock {
 	const bool &get_method(HTTP::METHODS method) const {
 		return _methods_allowed[method];
 	}
+	void	deny_all_methods() {
+		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++)
+			_methods_allowed[i] = false;
+	}
 
 	// Autoindex
 	void set_autoindex(bool value) { _autoindex = value; }
