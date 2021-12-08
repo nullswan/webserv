@@ -233,7 +233,8 @@ class Request {
 			std::string	header_name = header_str.substr(0, header_name_separator_pos);
 			std::string	header_value = header_str.substr(header_name_separator_pos + 1);
 			_strtolower(&header_name);
-			_strtolower(&header_value);
+			if (header_name != "cookie")
+				_strtolower(&header_value);
 			_trim(&header_value);
 			(*bucket)[header_name] = header_value;
 			if (header_name == "host")
