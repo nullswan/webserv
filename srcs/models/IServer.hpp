@@ -154,6 +154,23 @@ class IServer : public Webserv::Models::IBlock {
 		return vhost->get_location(uri);
 	}
 
+	const IBlock
+	*get_block_using_vhosts(const std::string &host,
+		const std::string &uri) const {
+		const IServer *vhost = get_vhost(host);
+		return vhost->get_block(uri);
+	}
+
+	const IBlock *get_block(const std::string &uri) const {
+		std::string real_uri = uri;
+		if (real_uri.find("/", 1) != std::string::npos)
+			real_uri = real_uri.substr(0, real_uri.find("/", 1));
+		LocationObject::const_iterator it = _locations.find(uri);
+		if (it != _locations.end())
+			return dynamic_cast<IBlock*>(it->second);
+		return dynamic_cast<IBlock*>(const_cast<IServer*>(this));
+	}
+
 	// ILocation(s) solver
 	ILocation *get_location(const std::string &uri) const {
 		std::string real_uri = uri;

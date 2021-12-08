@@ -14,6 +14,7 @@
 #include "http/codes.hpp"
 #include "http/request.hpp"
 #include "models/IServer.hpp"
+#include "server/cgi.hpp"
 #include "server/autoindex.hpp"
 
 namespace Webserv {
@@ -32,13 +33,18 @@ class Response {
 
 	Request *_req;
 	IServer	*_master;
+	Server::CGI 	*_cgi;
 
  public:
 	explicit Response(Request *request)
-	:	_status(request->get_code()), _req(request) {}
+	:	_status(request->get_code()),
+		_req(request),
+		_cgi(0) {}
 
 	explicit Response(int code)
-	:	_status(code), _req(0) {}
+	:	_status(code),
+		_req(0),
+		_cgi(0) {}
 
 	bool	prepare(IServer *master) {
 		_master = master;
@@ -62,61 +68,39 @@ class Response {
 	size_t	size() const { return _payload.size(); }
 
  private:
-	void	GET(const Models::ILocation *loc) {
-		std::string path = _build_method_path(loc, METH_GET, false);
+	void	GET(const Models::IBlock *block) {
+		std::string path = _build_method_path(block, METH_GET, false);
 		if (path == "")
 			return;
-		if (loc) {
-			if (loc->get_redirection() != "") {
-				_get_redirection(loc->get_redirection(),
-					loc->get_redirection_code());
-				return;
-			}
-		} else {
-			if (_master->get_redirection() != "") {
-				_get_redirection(_master->get_redirection(),
-					_master->get_redirection_code());
-				return;
-			}
-		}
-		_get_file_path(loc, path);
+		
+		if (block->get_redirection() != "")
+			return (void)_do_redirection(block);
+
+		_get_file_path(block, path);
 	}
 
-	std::string _build_method_path(const Models::ILocation *loc,
+	std::string _build_method_path(const Models::IBlock *block,
 		METHODS method, bool upload_pass) {
 		std::string path;
 
-		if (loc) {
-			if (loc->get_method(method) == false) {
-				_status = 405;
-				return "";
-			}
-			if (upload_pass && loc->get_upload_pass() != "")
-				path = loc->get_upload_pass();
-			else
-				path = loc->get_root();
-		} else {
-			if (_master->get_method(method) == false) {
-				_status = 405;
-				return "";
-			}
-			if (upload_pass && _master->get_upload_pass() != "")
-				path = _master->get_upload_pass();
-			else
-				path = _master->get_root();
+		if (block->get_method(method) == false) {
+			_status = 405;
+			return "";
 		}
+		if (upload_pass && block->get_upload_pass() != "")
+			path = block->get_upload_pass();
+		else
+			path = block->get_root();
 
 		return path + _req->get_uri();
 	}
 
-	bool	_cgi_pass(const Models::ILocation *loc) {
-		std::string cgi_path;
-		if (loc)
-			cgi_path = loc->get_cgi(_req->get_uri());
-		else
-			cgi_path = _master->get_cgi(_req->get_uri());
-		if (cgi_path != "")
-			std::cout << "[deprecated] appears to be a cgi path" << std::endl;
+	bool	_cgi_pass(const Models::IBlock *block) {
+		std::string cgi_path = block->get_cgi(_req->get_uri());
+		if (cgi_path != "") {
+			std::cout << "run cgi" << std::endl;
+			_cgi = 0;
+		}
 		return false;
 	}
 
@@ -147,14 +131,10 @@ class Response {
 		return true;
 	}
 
-	bool	_get_index(const Models::ILocation *loc,
+	bool	_get_index(const Models::IBlock *block,
 		const std::string &path,
 		const std::vector<struct dirent> &files) {
-		Models::IBlock::IndexObject indexs;
-		if (loc)
-			indexs = loc->get_indexs();
-		else
-			indexs = _master->get_indexs();
+		Models::IBlock::IndexObject indexs = block->get_indexs();
 		if (indexs.size() <= 0)
 			return false;
 
@@ -163,7 +143,7 @@ class Response {
 			std::vector<struct dirent>::const_iterator	it_file;
 			for (it_file = files.begin(); it_file != files.end(); it_file++)
 				if (it_file->d_name == *it)
-					return _get_file_path(loc, path + "/" + it_file->d_name);
+					return _get_file_path(block, path + "/" + it_file->d_name);
 		}
 		return false;
 	}
@@ -176,18 +156,18 @@ class Response {
 		return true;
 	}
 
-	bool	_get_redirection(const std::string &path, const int &code) {
-		_status = code;
-		_headers["Location"] = path;
+	bool	_do_redirection(const Models::IBlock *block) {
+		_status = block->get_redirection_code();
+		_headers["Location"] = block->get_redirection();
 		return true;
 	}
 
-	bool	_get_file_path(const Models::ILocation *loc, const std::string &path) {
-		if (_cgi_pass(loc))
+	bool	_get_file_path(const Models::IBlock *block, const std::string &path) {
+		if (_cgi_pass(block))
 			return true;
 
 		if (path[path.size() - 1] == '/')
-			return _get_dir(loc, path);
+			return _get_dir(block, path);
 
 		errno = 0;
 		struct stat db;
@@ -200,7 +180,7 @@ class Response {
 
 		switch (db.st_mode & S_IFMT) {
 			case S_IFDIR:
-				return _get_dir(loc, _req->get_uri());
+				return _get_dir(block, _req->get_uri());
 			default: {
 				_body = _get_file_content(path);
 				return true;
@@ -210,27 +190,22 @@ class Response {
 		return true;
 	}
 
-	bool	_get_dir(const Models::ILocation *loc, const std::string path) {
+	bool	_get_dir(const Models::IBlock *block, const std::string path) {
 		std::vector<struct dirent> files;
 		if (!_dump_files_dir(path, &files))
 			return false;
-		if (_get_index(loc, path, files))
+		if (_get_index(block, path, files))
 			return true;
-		if (loc && loc->get_autoindex())
-			return _get_autoindex(files, _req->get_uri(), loc->get_root());
-		else if (!loc && _master->get_autoindex())
-			return _get_autoindex(files, _req->get_uri(), _master->get_root());
+		if (block->get_autoindex() == true)
+			return _get_autoindex(files, path, block->get_root());
 		_status = 404;
 		return false;
 	}
 
-	void	DELETE(const Models::ILocation *loc) {
-		std::string path = _build_method_path(loc, METH_DELETE, true);
+	void	DELETE(const Models::IBlock *block) {
+		std::string path = _build_method_path(block, METH_DELETE, true);
 		if (path == "")
 			return;
-
-		// if (_cgi_pass(loc))
-		// 	return;
 
 		errno = 0;
 		if (remove(path.c_str()) == -1) {
@@ -245,14 +220,14 @@ class Response {
 	}
 
 	void	invoke() {
-		const Models::ILocation	*loc = _master->get_location_using_vhosts(
+		const Models::IBlock *block = _master->get_block_using_vhosts(
 			_req->get_host(), _req->get_uri());
 
 		if (_req->get_method() == METH_GET)
-			GET(loc);
+			GET(block);
 		// else if (_req->get_method() == METH_POST)
 		else if (_req->get_method() == METH_DELETE)
-			DELETE(loc);
+			DELETE(block);
 		else
 			_status = 501;
 	}
