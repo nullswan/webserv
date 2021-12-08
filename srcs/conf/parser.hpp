@@ -434,7 +434,7 @@ class Parser {
 				case CONF_ERRORENOUS_TOKEN:
 					return errorneous_line_error(line, line_nbr);
 				case CONF_BLOCK_CLOSING: {
-					if (scope < 0)
+					if (scope <= 0)
 						return invalid_scope_error(line, line_nbr);
 					if (scope == 2)
 						current_block = _servers.back();
