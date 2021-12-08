@@ -269,6 +269,10 @@ class Parser {
 					_extract_value("allowed_methods", &line, false);
 					std::vector<std::string> split;
 					_split_string(line, ' ', &split);
+					if (locations.size() == 0)
+						_servers.back()->deny_all_methods();
+					else
+						locations.back()->deny_all_methods();
 					std::vector<std::string>::const_iterator it = split.begin();
 					for (; it != split.end(); it++) {
 						HTTP::METHODS m = HTTP::enumerate_method(*it);
