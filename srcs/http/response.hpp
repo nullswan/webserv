@@ -88,7 +88,7 @@ class Response {
 
 		if (loc) {
 			if (loc->get_method(method) == false) {
-				_status = 403;
+				_status = 405;
 				return "";
 			}
 			if (upload_pass && loc->get_upload_pass() != "")
@@ -97,7 +97,7 @@ class Response {
 				path = loc->get_root();
 		} else {
 			if (_master->get_method(method) == false) {
-				_status = 403;
+				_status = 405;
 				return "";
 			}
 			if (upload_pass && _master->get_upload_pass() != "")
@@ -109,7 +109,7 @@ class Response {
 		return path + _req->get_uri();
 	}
 
-	bool	_get_cgi(const Models::ILocation *loc) {
+	bool	_cgi_pass(const Models::ILocation *loc) {
 		std::string cgi_path;
 		if (loc)
 			cgi_path = loc->get_cgi(_req->get_uri());
@@ -183,7 +183,8 @@ class Response {
 	}
 
 	bool	_get_file_path(const Models::ILocation *loc, const std::string &path) {
-		_get_cgi(loc);
+		if (_cgi_pass(loc))
+			return true;
 
 		if (path[path.size() - 1] == '/')
 			return _get_dir(loc, path);
@@ -227,6 +228,10 @@ class Response {
 		std::string path = _build_method_path(loc, METH_DELETE, true);
 		if (path == "")
 			return;
+
+		// if (_cgi_pass(loc))
+		// 	return;
+
 		errno = 0;
 		if (remove(path.c_str()) == -1) {
 			_status = 500;
