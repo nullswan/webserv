@@ -36,7 +36,7 @@ class ILocation : public Webserv::Models::IBlock {
 		const std::string &root,
 		const std::string &upload_pass,
 		const size_t &body_limit,
-		const std::map<int, std::string> error_pages)
+		const std::map<int, std::string> &error_pages)
 	:	_path(path) {
 		_name = name;
 		_port = port;
@@ -47,8 +47,6 @@ class ILocation : public Webserv::Models::IBlock {
 	}
 
 	ILocation *clone() { return new ILocation(*this); }
-
-	const std::string &get_path() const { return this->_path; }
 };
 }  // namespace Models
 }  // namespace Webserv

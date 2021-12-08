@@ -112,9 +112,6 @@ class IServer : public Webserv::Models::IBlock {
 	}
 
 	// Location(s)
-	const std::map<std::string, ILocation *> &get_locations() const {
-		return _locations;
-	}
 	ILocation	*new_location(const std::string &key) {
 		if (_locations.find(key) != _locations.end())
 			return 0;
@@ -131,7 +128,6 @@ class IServer : public Webserv::Models::IBlock {
 	}
 
 	// vHost(s) solver
-	int vhosts_size() const { return _vhosts.size(); }
 	const IServer *get_vhost(const std::string &host) const {
 		if (_vhosts.size() > 0) {
 			std::string real_host = host;
@@ -158,7 +154,7 @@ class IServer : public Webserv::Models::IBlock {
 		std::string real_uri = uri;
 		if (real_uri.find("/", 1) != std::string::npos)
 			real_uri = real_uri.substr(0, real_uri.find("/", 1));
-		LocationObject::const_iterator it = _locations.find(uri);
+		LocationObject::const_iterator it = _locations.find(real_uri);
 		if (it != _locations.end())
 			return dynamic_cast<IBlock*>(it->second);
 		return dynamic_cast<IBlock*>(const_cast<IServer*>(this));

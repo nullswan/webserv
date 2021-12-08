@@ -44,9 +44,10 @@ class IBlock {
 
  public:
 	IBlock()
-	: 	_root(WEBSERV_DEFAULT_ROOT_DIR),
+	: 	_port(0),
+		_root(WEBSERV_DEFAULT_ROOT_DIR),
 		_upload_pass(""),
-		_redirection(""),
+		_redirection(""), _redirection_code(0),
 		_body_limit(1000000),
 		_autoindex(false),
 		_indexs(),
@@ -84,7 +85,6 @@ class IBlock {
 
 	// Body Limit
 	void set_body_limit(size_t limit) { _body_limit = limit; }
-	const size_t &get_body_limit() const { return _body_limit; }
 
 	// Allowed Methods
 	void set_method(HTTP::METHODS method, bool value) {
@@ -109,9 +109,6 @@ class IBlock {
 	}
 
 	// Error Pages
-	const ErrorPagesObject &get_error_pages() const {
-		return _error_pages;
-	}
 	void	set_error_page(int code, const std::string &source) {
 		_error_pages[code] = source;
 	}
@@ -125,9 +122,6 @@ class IBlock {
 	// CGI
 	void			set_cgi(const std::string& extension, const std::string& cgi_path) {
 		_cgi[extension] = cgi_path;
-	}
-	const CGIObject &get_cgis() const {
-		return _cgi;
 	}
 	const std::string get_cgi(const std::string &uri) const {
 		const std::string ext = uri.find(".") != std::string::npos

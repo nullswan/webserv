@@ -39,11 +39,13 @@ class Response {
 	explicit Response(Request *request)
 	:	_status(request->get_code()),
 		_req(request),
+		_master(0),
 		_cgi(0) {}
 
 	explicit Response(int code)
 	:	_status(code),
 		_req(0),
+		_master(0),
 		_cgi(0) {}
 
 	bool	prepare(IServer *master) {
@@ -84,7 +86,7 @@ class Response {
 		std::string path;
 
 		if (block->get_method(method) == false) {
-			_status = 405;
+			set_status(405);
 			return "";
 		}
 		if (upload_pass && block->get_upload_pass() != "")
@@ -104,24 +106,24 @@ class Response {
 		return false;
 	}
 
-	bool _dump_files_dir(const std::string path,
+	bool _dump_files_dir(const std::string &path,
 		std::vector<struct dirent> *bucket) {
 		errno = 0;
 
 		DIR	*dirptr = opendir(path.c_str());
 		if (!dirptr) {
-			_status = 500;
+			set_status(500);
 			if (errno == EACCES || errno == EPERM)
-				_status = 403;
+				set_status(403);
 			if (errno == ENOENT)
-				_status = 404;
+				set_status(404);
 			return false;
 		}
 
 		struct dirent *file;
 		while ((file = readdir(dirptr))) {
 			if (errno) {
-				_status = 500;
+				set_status(500);
 				closedir(dirptr);
 				return false;
 			}
@@ -149,15 +151,15 @@ class Response {
 	}
 
 	bool	_get_autoindex(const std::vector<struct dirent>& files,
-		const std::string &path, const std::string &root) {
-		Server::AutoIndexBuilder autoindex(files, root, path);
+		const std::string &path) {
+		Server::AutoIndexBuilder autoindex(files, path);
 		_body = autoindex.toString();
-		_status = 200;
+		set_status(200);
 		return true;
 	}
 
 	bool	_do_redirection(const Models::IBlock *block) {
-		_status = block->get_redirection_code();
+		set_status(block->get_redirection_code());
 		_headers["Location"] = block->get_redirection();
 		return true;
 	}
@@ -172,9 +174,9 @@ class Response {
 		errno = 0;
 		struct stat db;
 		if (stat(path.c_str(), &db) == -1) {
-			_status = 500;
+			set_status(500);
 			if (errno == ENOENT || errno == ENOTDIR)
-				_status = 404;
+				set_status(404);
 			return true;
 		}
 
@@ -186,19 +188,19 @@ class Response {
 				return true;
 			}
 		}
-		_status = 404;
+		set_status(404);
 		return true;
 	}
 
-	bool	_get_dir(const Models::IBlock *block, const std::string path) {
+	bool	_get_dir(const Models::IBlock *block, const std::string &path) {
 		std::vector<struct dirent> files;
 		if (!_dump_files_dir(path, &files))
 			return false;
 		if (_get_index(block, path, files))
 			return true;
 		if (block->get_autoindex() == true)
-			return _get_autoindex(files, path, block->get_root());
-		_status = 404;
+			return _get_autoindex(files, path);
+		set_status(404);
 		return false;
 	}
 
@@ -209,14 +211,14 @@ class Response {
 
 		errno = 0;
 		if (remove(path.c_str()) == -1) {
-			_status = 500;
+			set_status(500);
 			if (errno == ENOENT || errno == ENOTDIR)
-				_status = 404;
+				set_status(404);
 			else if (errno == EACCES || errno == EPERM || errno == 39)
-				_status = 403;
+				set_status(403);
 			return;
 		}
-		_status = 204;
+		set_status(204);
 	}
 
 	void	invoke() {
@@ -229,7 +231,7 @@ class Response {
 		else if (_req->get_method() == METH_DELETE)
 			DELETE(block);
 		else
-			_status = 501;
+			set_status(501);
 	}
 
 	std::string _prepare_headers() {
@@ -270,9 +272,9 @@ class Response {
 	std::string _get_file_content(const std::string &path) {
 		int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
 		if (fd == -1) {
-			_status = 500;
+			set_status(500);
 			if (errno == EACCES)
-				_status = 403;
+				set_status(403);
 			return "";
 		}
 
