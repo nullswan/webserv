@@ -12,16 +12,11 @@
 #include <utility>
 
 #include "models/IBlock.hpp"
+#include "models/ISession.hpp"
 #include "models/ILocation.hpp"
-
 
 namespace Webserv {
 namespace Models {
-
-struct SessionObj {
-	std::vector<std::pair<std::string, std::string> >	*jar;
-	time_t		expire_at;
-};
 
 class IServer : public Webserv::Models::IBlock {
  public:
@@ -29,15 +24,14 @@ class IServer : public Webserv::Models::IBlock {
 
 	typedef std::map<std::string, ILocation *>	LocationObject;
 	typedef std::map<std::string, IServer *>	VHostsObject;
-	typedef std::vector<std::pair<std::string, std::string> > CookieJar;
-	typedef std::map<std::string, SessionObj>  Sessions;
+	typedef std::map<std::string, Session *>  	Sessions;
 
  protected:
 	const std::string _host;
 
 	LocationObject	_locations;
 	VHostsObject	_vhosts;
-	Sessions		_sessions;
+	Sessions	_sessions;
 
  public:
 	IServer()
@@ -104,9 +98,7 @@ class IServer : public Webserv::Models::IBlock {
 			delete vhost_it->second;
 
 		#ifndef WEBSERV_BENCHMARK
-		Sessions::iterator session_it = _sessions.begin();
-		for (; session_it != _sessions.end(); session_it++)
-			delete session_it->second.jar;
+		destroy_sessions();
 		#endif
 	}
 
@@ -205,49 +197,71 @@ class IServer : public Webserv::Models::IBlock {
 	}
 
 	// Cookies / Sessions
-	void	expired_sessions() {
+	void	destroy_sessions() {
 		Sessions::iterator it = _sessions.begin();
+		for (; it != _sessions.end(); it++)
+			delete it->second;
+	}
 
+	void	gbc_sessions() {
 		time_t now = time(0);
-		for (; it != _sessions.end(); ++it) {
-			if (it->second.expire_at < now) {
-				delete_session(it->first);
-				return expired_sessions();
+		Sessions::iterator it = _sessions.begin();
+		for (; it != _sessions.end(); it++) {
+			if (!it->second->alive(now)) {
+				delete it->second;
+				_sessions.erase(it);
+				it = _sessions.begin();
 			}
 		}
 	}
 
-	bool	add_session(const std::string &session_id) {
-		SessionObj session;
+	// add_session
+	// del_session
+	// get_session
 
-		session.expire_at = time(0) + WEBSERV_SESSION_TIMEOUT;
-		session.jar = new CookieJar();
-		// session.jar->push_back(std::make_pair("WEBSERV_SID", session_id));
-		std::pair<Sessions::iterator, bool> it =
-			_sessions.insert(std::pair<std::string, SessionObj>(session_id, session));
-		if (!it.second) {
-			delete session.jar;
-			return false;
-		}
-		return true;
-	}
+	// void	expired_sessions() {
+	// 	Sessions::iterator it = _sessions.begin();
 
-	void	delete_session(const std::string &session_id) {
-		Sessions::iterator it = _sessions.find(session_id);
-		if (it == _sessions.end())
-			return;
-		delete it->second.jar;
-		_sessions.erase(it);
-	}
+	// 	time_t now = time(0);
+	// 	for (; it != _sessions.end(); ++it) {
+	// 		if (it->second.expire_at < now) {
+	// 			delete_session(it->first);
+	// 			return expired_sessions();
+	// 		}
+	// 	}
+	// }
 
-	CookieJar *get_cookies_jar(const std::string &session_id) const {
-		if (session_id.size() != WEBSERV_SESSION_ID_LENGTH)
-			return 0;
-		Sessions::const_iterator it = _sessions.find(session_id);
-		if (it != _sessions.end())
-			return it->second.jar;
-		return 0;
-	}
+	// bool	add_session(const std::string &session_id) {
+	// 	SessionObj session;
+
+	// 	session.expire_at = time(0) + WEBSERV_SESSION_TIMEOUT;
+	// 	session.jar = new CookieJar();
+	// 	// session.jar->push_back(std::make_pair("WEBSERV_SID", session_id));
+	// 	std::pair<Sessions::iterator, bool> it =
+	// 		_sessions.insert(std::pair<std::string, SessionObj>(session_id, session));
+	// 	if (!it.second) {
+	// 		delete session.jar;
+	// 		return false;
+	// 	}
+	// 	return true;
+	// }
+
+	// void	delete_session(const std::string &session_id) {
+	// 	Sessions::iterator it = _sessions.find(session_id);
+	// 	if (it == _sessions.end())
+	// 		return;
+	// 	delete it->second.jar;
+	// 	_sessions.erase(it);
+	// }
+
+	// CookieJar *get_cookies_jar(const std::string &session_id) const {
+	// 	if (session_id.size() != WEBSERV_SESSION_ID_LENGTH)
+	// 		return 0;
+	// 	Sessions::const_iterator it = _sessions.find(session_id);
+	// 	if (it != _sessions.end())
+	// 		return it->second.jar;
+	// 	return 0;
+	// }
 
 	// Other
 	IServer *clone() const {
