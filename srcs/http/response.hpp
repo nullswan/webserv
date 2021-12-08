@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <utility>
 
 #include "http/codes.hpp"
 #include "http/request.hpp"
@@ -21,16 +22,19 @@ namespace Webserv {
 namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
-	typedef std::map<std::string, std::string>		HeadersObject;
-	// typedef std::vector<std::string>				SetCookieJar;
+	typedef std::map<std::string, std::string>		Headers;
+	#ifndef WEBSERV_BENCHMARK
+	typedef std::multimap<std::string, std::string>	Cookies;
+	#endif
 
  private:
 	std::string _body;
 	std::string _payload;
 
-	HeadersObject _headers;
-
-	// SetCookieJar	_set_cookies;
+	Headers _headers;
+	#ifndef WEBSERV_BENCHMARK
+	Cookies _cookies_to_set;
+	#endif
 
 	int _status;
 
@@ -72,12 +76,16 @@ class Response {
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
 	void	add_header(const std::string &key, const std::string &value) {
-		// if (key == "Set-Cookie")
-			// _set_cookies.push_back(value);
-		// else
+		#ifdef WEBSERV_BENCHMARK
 		_headers[key] = value;
+		#else
+		if (key == "Set-Cookie")
+			_cookies_to_set.insert(
+				std::pair<std::string, std::string>(key, value));
+		else
+			_headers[key] = value;
+		#endif
 	}
-	// const SetCookieJar	*get_set_cookies() { return &_set_cookies; }
 
  private:
 	void	GET(const Models::IBlock *block) {
@@ -258,15 +266,15 @@ class Response {
 		head << "HTTP/1.1 " << _status << " " << resolve_code(_status) << "\r\n";
 
 		std::string headers;
-		HeadersObject::iterator header_it = _headers.begin();
-		for (; header_it != _headers.end(); ++header_it)
-			headers += header_it->first + ": " + header_it->second + "\r\n";
+		Headers::const_iterator hit = _headers.begin();
+		for (; hit != _headers.end(); ++hit)
+			headers += hit->first + ": " + hit->second + "\r\n";
 
-		// #ifndef WEBSERV_BENCHMARK
-		// SetCookieJar::iterator cookie_it = _set_cookies.begin();
-		// for (; cookie_it != _set_cookies.end(); ++cookie_it)
-		// 	headers += "Set-Cookie: " + *cookie_it + "\r\n";
-		// #endif
+		#ifndef WEBSERV_BENCHMARK
+		Cookies::const_iterator cit = _cookies_to_set.begin();
+		for (; cit != _cookies_to_set.end(); ++cit)
+			headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
+		#endif
 		return head.str() + headers + "\r\n";
 	}
 
