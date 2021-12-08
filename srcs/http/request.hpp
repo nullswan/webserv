@@ -41,7 +41,7 @@ class Request {
 	STATUS_CODE	_http_code;
 
  public:
-	explicit Request(std::string buffer)
+	explicit Request(const std::string &buffer)
 	:	_raw_request(buffer),
 		_method(METH_UNKNOWN),
 		_host(""), _uri(""),
@@ -57,7 +57,7 @@ class Request {
 		gettimeofday(&_time, NULL);
 	}
 
-	void	handle_buffer(std::string buffer) { _raw_request += buffer; }
+	void	handle_buffer(const std::string &buffer) { _raw_request += buffer; }
 
 	bool	init() {
 		if (_extract_method() == false)

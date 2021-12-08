@@ -55,7 +55,7 @@ class Parser {
 		} catch (std::exception &e) {
 			return false;
 		}
-		if (_servers.size() <= 0)
+		if (_servers.size() == 0)
 			return no_server_error();
 		_handle_vhosts();
 		return _handle_interfaces();
@@ -66,9 +66,8 @@ class Parser {
 			return;
 
 		IServerList::iterator it = _servers.begin();
-		for (; it != _servers.end(); it++) {
+		for (; it != _servers.end(); it++)
 			delete *it;
-		}
 		_servers.clear();
 	}
 
@@ -105,7 +104,7 @@ class Parser {
 					(*it)->merge(*it2);
 					delete *it2;
 					_servers.erase(it2);
-					it2--;
+					--it2;
 				}
 			}
 		}
@@ -132,7 +131,7 @@ class Parser {
 		return _dump_file(_conf_file_path, &_conf_file);
 	}
 
-	bool	_check_file_flags(const std::string &path) {
+	static bool	_check_file_flags(const std::string &path) {
 		struct stat buffer;
 		if (stat(path.c_str(), &buffer) != 0)
 			return file_not_found_error(path);
@@ -169,7 +168,7 @@ class Parser {
 		return true;
 	}
 
-	int	_resolve_line(std::string *line) {
+	static int	_resolve_line(std::string *line) {
 		if (line->substr(0, 8) == "server {")
 			return CONF_SERVER_OPENING;
 		_skip_whitespaces(line);
@@ -181,7 +180,7 @@ class Parser {
 			line->substr(0, line->find(" ")));
 	}
 
-	int
+	static int
 	_resolve_keys(const std::string &first_key, const std::string &second_key) {
 		int state = _resolve_key(first_key);
 		if (state != CONF_NOT_FOUND_TOKEN)
@@ -191,7 +190,7 @@ class Parser {
 		return CONF_ERRORENOUS_TOKEN;
 	}
 
-	int _resolve_key(const std::string &key) {
+	static int _resolve_key(const std::string &key) {
 		if (key == "allowed_methods")
 			return CONF_BLOCK_ALLOWED_METHODS;
 		if (key == "autoindex")
@@ -219,16 +218,16 @@ class Parser {
 		return CONF_NOT_FOUND_TOKEN;
 	}
 
-	inline void	_skip_whitespaces(std::string *s) {
+	static inline void	_skip_whitespaces(std::string *s) {
 		while ((*s)[0] == '\t' || (*s)[0] == ' ')
 			s->erase(0, 1);
 	}
 
-	bool _is_digits(const std::string &s) {
+	static inline bool _is_digits(const std::string &s) {
 		return s.find_first_not_of("0123456789") == std::string::npos;
 	}
 
-	void _extract_value(const std::string &key, std::string *bucket,
+	static void _extract_value(const std::string &key, std::string *bucket,
 		bool inside_location_block) {
 		bucket->erase(0, key.size());
 		_skip_whitespaces(bucket);
@@ -261,9 +260,9 @@ class Parser {
 		std::stringstream	ss(_conf_file);
 		Models::IBlock *current_block = NULL;
 
-		int token = 0, line_nbr = 0, scope = 0;
+		int line_nbr = 0, scope = 0;
 		while (std::getline(ss, line) && ++line_nbr) {
-			token = _resolve_line(&line);
+			int token = _resolve_line(&line);
 			switch (token) {
 				case CONF_BLOCK_ALLOWED_METHODS: {
 					_extract_value("allowed_methods", &line, false);
