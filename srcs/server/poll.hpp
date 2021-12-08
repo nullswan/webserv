@@ -39,12 +39,12 @@ class Poll {
 
  public:
 	Poll()
-	: _alive(true) {
+	:	_alive(true), epoll_fd(-1) {
 		HTTP::init_status_map();
 	}
 
 	~Poll() {
-		for (std::map<int, Instance *>::iterator it = _instances.begin();
+		for (InstanceObject::iterator it = _instances.begin();
 			it != _instances.end(); ++it)
 			delete it->second;
 
@@ -64,11 +64,11 @@ class Poll {
 
 	int	run() {
 		struct epoll_event events[WEBSERV_MAX_CONNS];
-		int	nfds, i, evs = 0;
+		int i, evs = 0;
 		std::cout << "[📭] up and awaiting..." << std::endl;
 		while (_alive) {
-			nfds = epoll_wait(epoll_fd, events, WEBSERV_MAX_CONNS, 1000);
-			for (i = 0; i < nfds; i++) {
+			int nfds = epoll_wait(epoll_fd, events, WEBSERV_MAX_CONNS, 1000);
+			for (i = 0; i < nfds; ++i) {
 				++evs;
 				int ev_fd = events[i].data.fd;
 				if (ev_fd == STDIN_FILENO) {
