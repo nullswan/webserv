@@ -6,12 +6,12 @@ BUILD_COMMIT 	:= $(shell git rev-parse --short HEAD)
 OBJS_DIR	:= ./objs/
 SRCS_DIR	:= ./srcs/
 
+DBFLAGS = -pedantic -Wunreachable-code -Wunused
 BFLAGS = -D WEBSERV_BUILD_COMMIT=\"@$(BUILD_COMMIT)\"
 CFLAGS	:= -Wall -Wextra -Werror -std=c++98 -I $(SRCS_DIR)
 OFLAGS  := -O3 -D WEBSERV_BENCHMARK=1
 DFLAGS	= -MMD -MF $(@:.o=.d)
 SHELL	:= /bin/bash
-# DEBUGFLAGS = -pedantic -Wunreachable-code -Wunused
 
 FILES	= main.cpp
 

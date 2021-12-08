@@ -85,7 +85,8 @@ static const std::string color_code(const STATUS_CODE &status_code) {
 	std::stringstream code;
 	code << status_code;
 
-	if (status_code > 600 ||  status_code < 100)
+	if (status_code > NETWORK_AUTHENTICATION_REQUIRED
+		||  status_code < CONTINUE)
 		return "?";
 	if (status_code >= 500)
 		return "\033[0;41;37m " + code.str() + " \033[0m";

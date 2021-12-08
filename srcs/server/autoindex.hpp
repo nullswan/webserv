@@ -23,13 +23,13 @@ class AutoIndexBuilder {
 
  public:
 	AutoIndexBuilder(const std::vector<struct dirent>& indexs,
-		const std::string &root, const std::string &path) {
+		const std::string &path) {
 		_build_header(path);
 		_table_header();
 
 		std::vector<struct dirent>::const_iterator it = indexs.begin();
 		for (; it != indexs.end(); it++)
-			_build_row(*it, root, path);
+			_build_row(*it, path);
 
 		_sort_indexs();
 		_dump_indexs();
@@ -42,10 +42,8 @@ class AutoIndexBuilder {
 	}
 
  private:
-	void	_build_row(struct dirent index,
-		const std::string &root, const std::string &path) {
-		const std::string file_path = root + path + std::string(index.d_name);
-
+	void	_build_row(struct dirent index, const std::string &path) {
+		const std::string file_path = path + std::string(index.d_name);
 		if (index.d_name[0] == '.' && strlen(index.d_name) == 1)
 			return;
 		struct stat st;
