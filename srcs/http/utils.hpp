@@ -85,7 +85,7 @@ static const std::string color_code(const STATUS_CODE &status_code) {
 	std::stringstream code;
 	code << status_code;
 
-	if (status_code > NETWORK_AUTHENTICATION_REQUIRED 
+	if (status_code > NETWORK_AUTHENTICATION_REQUIRED
 		||  status_code < CONTINUE)
 		return "?";
 	if (status_code >= 500)
