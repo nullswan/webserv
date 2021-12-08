@@ -123,10 +123,10 @@ class IServer : public Webserv::Models::IBlock {
 			key,
 			_root,
 			_upload_pass,
-			_redirection, _redirection_code,
+			// _redirection, _redirection_code,
 			_body_limit,
-			_methods_allowed,
-			_autoindex, _indexs,
+			// _methods_allowed,
+			// _autoindex, _indexs,
 			_error_pages);
 
 		_locations.insert(std::pair<std::string, ILocation *>(key, location));
