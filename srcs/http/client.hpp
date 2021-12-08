@@ -99,13 +99,13 @@ class Client {
 		if (resp)
 			delete resp;
 		resp = new Response(req);
-		#ifndef WEBSERV_BENCHMARK
-			_manage_cookie_jar();
-		#endif
+		// #ifndef WEBSERV_BENCHMARK
+			// _manage_cookie_jar();
+		// #endif
 		resp->prepare(_master);
-		#ifndef WEBSERV_BENCHMARK
-			_gather_cookie_jar();
-		#endif
+		// #ifndef WEBSERV_BENCHMARK
+		// 	_gather_cookie_jar();
+		// #endif
 		send(_fd, resp->toString(), resp->size(), 0);
 		return _close();
 	}
@@ -116,68 +116,65 @@ class Client {
 	}
 
  private:
-	bool	_session_openned() const {
-		return _sess_id != "";
-	}
+	// bool	_session_openned() const {
+	// 	return _sess_id != "";
+	// }
 
-	const std::string &_open_session() {
-		const std::string req_cookies = req->get_header_value("cookie");
-		const std::size_t pos = req_cookies.find("webserv_sid=");
-		if (pos != std::string::npos &&
-			pos + 12 + WEBSERV_SESSION_ID_LENGTH >= req_cookies.size()) {
-			_sess_id = req_cookies.substr(pos + 12,
-				pos + 12 + WEBSERV_SESSION_ID_LENGTH);
-			Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
-			if (cookies != NULL) {
-				std::cout << "cookies already presents" << std::endl;
-				Models::IServer::CookieJar::iterator it = cookies->begin();
-				while (it != cookies->end()) {
-					if (it->first == "webserv_sid")
-						continue;
-					resp->add_header("Set-Cookie", it->first + "=" + it->second);
-					it++;
-				}
-				return _sess_id;
-			}
-		}
+	// const std::string &_open_session() {
+	// 	const std::string req_cookies = req->get_header_value("cookie");
+	// 	const std::size_t pos = req_cookies.find(WEBSERV_SESSION_ID + "=");
+	// 	if (pos != std::string::npos &&
+	// 		pos + 12 + WEBSERV_SESSION_ID_LENGTH >= req_cookies.size()) {
+	// 		_sess_id = req_cookies.substr(pos + 12,
+	// 			pos + 12 + WEBSERV_SESSION_ID_LENGTH);
+	// 		Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
+	// 		if (cookies != NULL) {
+	// 			Models::IServer::CookieJar::iterator it = cookies->begin();
+	// 			while (it != cookies->end()) {
+	// 				if (it->first == WEBSERV_SESSION_ID)
+	// 					continue;
+	// 				resp->add_header("Set-Cookie", it->first + "=" + it->second);
+	// 				it++;
+	// 			}
+	// 			return _sess_id;
+	// 		}
+	// 	}
 
-		_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
-		while (!_master->add_session(_sess_id))
-			_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
-		std::stringstream ss;
-		ss << "WEBSERV_SID=" << _sess_id << "; Max-Age=" << WEBSERV_SESSION_TIMEOUT;
-		resp->add_header("Set-Cookie", ss.str());
-		return _sess_id;
-	}
+	// 	_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
+	// 	while (!_master->add_session(_sess_id))
+	// 		_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
+	// 	resp->add_header("Set-Cookie", WEBSERV_SESSION_ID << "=" << _sess_id);
+	// 	return _sess_id;
+	// }
 
-	void	_manage_cookie_jar() {
-		if (!_session_openned())
-			_open_session();
-		Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
-		if (!cookies) {
-			_open_session();
-		} else {
-			Models::IServer::CookieJar::iterator it;
-			for (it = cookies->begin(); it != cookies->end(); ++it)
-				resp->add_header(it->first, it->second);
-		}
-	}
+	// void	_manage_cookie_jar() {
+	// 	if (!_session_openned())
+	// 		_open_session();
+	// 	Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
+	// 	if (!cookies) {
+	// 		_open_session();
+	// 	} else {
+	// 		Models::IServer::CookieJar::iterator it;
+	// 		for (it = cookies->begin(); it != cookies->end(); ++it)
+	// 			resp->add_header(it->first, it->second);
+	// 	}
+	// }
 
-	void	_gather_cookie_jar() const {
-		const std::vector<std::string> *cookies = resp->get_set_cookies();
+	// void	_gather_cookie_jar() const {
+	// 	const std::vector<std::string> *cookies = resp->get_set_cookies();
 
-		if (cookies->size() == 0)
-			return;
+	// 	if (cookies->size() == 0)
+	// 		return;
 
-		Models::IServer::CookieJar *jar = _master->get_cookies_jar(_sess_id);
-		std::vector<std::string>::const_iterator it = cookies->begin();
-		for (; it != cookies->end(); ++it) {
-			std::string key = it->substr(0, it->find("="));
-			std::string value = it->substr(it->find("=") + 1);
-			jar->push_back(std::make_pair(key, value));
-		}
-		// parser cgi return to get Set-Cookies
-	}
+	// 	Models::IServer::CookieJar *jar = _master->get_cookies_jar(_sess_id);
+	// 	std::vector<std::string>::const_iterator it = cookies->begin();
+	// 	for (; it != cookies->end(); ++it) {
+	// 		std::string key = it->substr(0, it->find("="));
+	// 		std::string value = it->substr(it->find("=") + 1);
+	// 		jar->push_back(std::make_pair(key, value));
+	// 	}
+	// 	// parser cgi return to get Set-Cookies
+	// }
 
 	READ	_request_status() {
 		bool header_status = req->get_header_status();

@@ -22,7 +22,7 @@ namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
 	typedef std::map<std::string, std::string>		HeadersObject;
-	typedef std::vector<std::string>				SetCookieJar;
+	// typedef std::vector<std::string>				SetCookieJar;
 
  private:
 	std::string _body;
@@ -30,7 +30,7 @@ class Response {
 
 	HeadersObject _headers;
 
-	SetCookieJar	_set_cookies;
+	// SetCookieJar	_set_cookies;
 
 	int _status;
 
@@ -72,12 +72,12 @@ class Response {
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
 	void	add_header(const std::string &key, const std::string &value) {
-		if (key == "Set-Cookie")
-			_set_cookies.push_back(value);
-		else
-			_headers[key] = value;
+		// if (key == "Set-Cookie")
+			// _set_cookies.push_back(value);
+		// else
+		_headers[key] = value;
 	}
-	const SetCookieJar	*get_set_cookies() { return &_set_cookies; }
+	// const SetCookieJar	*get_set_cookies() { return &_set_cookies; }
 
  private:
 	void	GET(const Models::IBlock *block) {
@@ -262,11 +262,11 @@ class Response {
 		for (; header_it != _headers.end(); ++header_it)
 			headers += header_it->first + ": " + header_it->second + "\r\n";
 
-		#ifndef WEBSERV_BENCHMARK
-		SetCookieJar::iterator cookie_it = _set_cookies.begin();
-		for (; cookie_it != _set_cookies.end(); ++cookie_it)
-			headers += "Set-Cookie: " + *cookie_it + "\r\n";
-		#endif
+		// #ifndef WEBSERV_BENCHMARK
+		// SetCookieJar::iterator cookie_it = _set_cookies.begin();
+		// for (; cookie_it != _set_cookies.end(); ++cookie_it)
+		// 	headers += "Set-Cookie: " + *cookie_it + "\r\n";
+		// #endif
 		return head.str() + headers + "\r\n";
 	}
 
