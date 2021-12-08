@@ -15,6 +15,7 @@ namespace HTTP {
 class Request {
 	typedef std::map<std::string, std::string> HeadersObject;
 	typedef std::map<std::string, std::string> FormObject;
+	typedef std::map<std::string, std::string> Cookies;
 
  private:
 	struct timeval _time;
@@ -32,6 +33,10 @@ class Request {
 	FORM		_post_form;
 	size_t		_body_size;
 	std::string	_multipart_boundary;
+
+	#ifndef WEBSERV_BENCHMARK
+	Cookies _cookies;
+	#endif
 
 	bool	_headers_ready;
 	bool	_body_ready;
@@ -237,6 +242,10 @@ class Request {
 				_strtolower(&header_value);
 			_trim(&header_value);
 			(*bucket)[header_name] = header_value;
+			#ifndef WEBSERV_BENCHMARK
+			if (header_name == "cookie")
+				_extract_cookies(header_value);
+			#endif
 			if (header_name == "host")
 				_host = header_value;
 			_raw_request.erase(0, header_separator_pos + 2);
@@ -246,6 +255,21 @@ class Request {
 			header_separator_pos = _raw_request.find("\r\n");
 		}
 		return true;
+	}
+
+	void	_extract_cookies(std::string data) {
+		try {
+			while (data.find(";")) {
+				const std::string cookie = data.substr(0, data.find(";"));
+				_cookies[cookie.substr(0, cookie.find("="))]
+					= cookie.substr(cookie.find("=") + 1);
+				if (cookie.size() + 2 > data.size())
+					break;
+				data = data.substr(cookie.size() + 2);
+			}
+		} catch (std::exception &e) {
+			return;
+		}
 	}
 
 	void	_extract_urlencoded() {
