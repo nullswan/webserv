@@ -10,8 +10,10 @@
 #include <sys/socket.h>
 
 #include <ctime>
+#include <vector>
 #include <string>
 #include <sstream>
+#include <utility>
 
 #include "consts.hpp"
 #include "http/enums.hpp"
@@ -123,13 +125,13 @@ class Client {
 		const std::size_t pos = req_cookies.find("webserv_sid=");
 		if (pos != std::string::npos &&
 			pos + 12 + WEBSERV_SESSION_ID_LENGTH >= req_cookies.size()) {
-			_sess_id = req_cookies.substr(pos + 12, pos + 12 + WEBSERV_SESSION_ID_LENGTH);
+			_sess_id = req_cookies.substr(pos + 12,
+				pos + 12 + WEBSERV_SESSION_ID_LENGTH);
 			Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
 			if (cookies != NULL) {
 				std::cout << "cookies already presents" << std::endl;
 				Models::IServer::CookieJar::iterator it = cookies->begin();
 				while (it != cookies->end()) {
-					// as we receive a webserv_sid which is valid we dont need to re-set the cookie
 					if (it->first == "webserv_sid")
 						continue;
 					resp->add_header("Set-Cookie", it->first + "=" + it->second);
