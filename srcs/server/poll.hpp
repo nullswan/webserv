@@ -256,7 +256,7 @@ class Poll {
 	void	_collect_expired_sessions() const {
 		InstanceObject::const_iterator it = _instances.begin();
 		for (; it != _instances.end(); it++)
-			it->second->gbc_sessions();
+			it->second->collect_sessions();
 	}
 
 	void	_delete_client(int ev_fd, HTTP::Client *client) {

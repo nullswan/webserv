@@ -203,7 +203,7 @@ class IServer : public Webserv::Models::IBlock {
 			delete it->second;
 	}
 
-	void	gbc_sessions() {
+	void	collect_sessions() {
 		time_t now = time(0);
 		Sessions::iterator it = _sessions.begin();
 		for (; it != _sessions.end(); it++) {
@@ -215,53 +215,29 @@ class IServer : public Webserv::Models::IBlock {
 		}
 	}
 
-	// add_session
-	// del_session
-	// get_session
+	Session *add_session(const std::string &sid) {
+		Session *session = new Session(sid);
+		std::pair<Sessions::iterator, bool> ret =
+			_sessions.insert(std::pair<std::string, Session *>(sid, session));
+		if (ret.second)
+			return session;
+		return 0;
+	}
 
-	// void	expired_sessions() {
-	// 	Sessions::iterator it = _sessions.begin();
+	void	del_session(const std::string &sid) {
+		Sessions::iterator it = _sessions.find(sid);
+		if (it != _sessions.end()) {
+			delete it->second;
+			_sessions.erase(it);
+		}
+	}
 
-	// 	time_t now = time(0);
-	// 	for (; it != _sessions.end(); ++it) {
-	// 		if (it->second.expire_at < now) {
-	// 			delete_session(it->first);
-	// 			return expired_sessions();
-	// 		}
-	// 	}
-	// }
-
-	// bool	add_session(const std::string &session_id) {
-	// 	SessionObj session;
-
-	// 	session.expire_at = time(0) + WEBSERV_SESSION_TIMEOUT;
-	// 	session.jar = new CookieJar();
-	// 	// session.jar->push_back(std::make_pair("WEBSERV_SID", session_id));
-	// 	std::pair<Sessions::iterator, bool> it =
-	// 		_sessions.insert(std::pair<std::string, SessionObj>(session_id, session));
-	// 	if (!it.second) {
-	// 		delete session.jar;
-	// 		return false;
-	// 	}
-	// 	return true;
-	// }
-
-	// void	delete_session(const std::string &session_id) {
-	// 	Sessions::iterator it = _sessions.find(session_id);
-	// 	if (it == _sessions.end())
-	// 		return;
-	// 	delete it->second.jar;
-	// 	_sessions.erase(it);
-	// }
-
-	// CookieJar *get_cookies_jar(const std::string &session_id) const {
-	// 	if (session_id.size() != WEBSERV_SESSION_ID_LENGTH)
-	// 		return 0;
-	// 	Sessions::const_iterator it = _sessions.find(session_id);
-	// 	if (it != _sessions.end())
-	// 		return it->second.jar;
-	// 	return 0;
-	// }
+	Session	*get_session(const std::string &sid) {
+		Sessions::iterator it = _sessions.find(sid);
+		if (it != _sessions.end())
+			return it->second;
+		return 0;
+	}
 
 	// Other
 	IServer *clone() const {

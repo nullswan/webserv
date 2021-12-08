@@ -33,7 +33,7 @@ class Client {
 	struct sockaddr_in	_addr;
 	socklen_t 			_addr_len;
 
-	std::string		_sess_id;
+	std::string		_sid;
 	std::string 	_ip;
 	int				_fd;
 	struct timeval 	ping;
