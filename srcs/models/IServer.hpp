@@ -11,8 +11,8 @@
 #include <memory>
 #include <utility>
 
+#include "http/session.hpp"
 #include "models/IBlock.hpp"
-#include "models/ISession.hpp"
 #include "models/ILocation.hpp"
 
 namespace Webserv {

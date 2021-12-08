@@ -129,6 +129,9 @@ class Request {
 			return it->second;
 		return "";
 	}
+	const Cookies &get_cookies() const {
+		return _cookies;
+	}
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;

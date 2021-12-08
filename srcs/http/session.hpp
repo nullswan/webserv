@@ -1,5 +1,5 @@
-#ifndef MODELS_ISESSION_HPP_
-#define MODELS_ISESSION_HPP_
+#ifndef HTTP_SESSION_HPP_
+#define HTTP_SESSION_HPP_
 
 #include <map>
 #include <string>
@@ -7,8 +7,10 @@
 #include "consts.hpp"
 
 class Session {
+	typedef std::map<std::string, std::string> Cookies;
+
  public:
-	std::map<std::string, std::string> cookies;
+	Cookies		cookies;
 
  private:
 	std::string	_id;
@@ -29,7 +31,7 @@ class Session {
 	// }
 };
 
-#endif  // MODELS_ISESSION_HPP_
+#endif  // HTTP_SESSION_HPP_
 
 /*
 	On Prepare Request:
