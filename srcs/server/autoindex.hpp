@@ -47,7 +47,6 @@ class AutoIndexBuilder {
 		if (index.d_name[0] == '.' && strlen(index.d_name) == 1)
 			return;
 		struct stat st;
-		std::cout << file_path << std::endl;
 		if (stat(file_path.c_str(), &st) == -1)
 			return;
 

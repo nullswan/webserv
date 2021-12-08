@@ -2,13 +2,14 @@
 #define SERVER_CGI_HPP_
 
 #include <map>
+#include <string>
 
 namespace Webserv {
 namespace Server {
 
 class CGI {
  private:
- 	std::map<std::string, std::string> _headers;
+	std::map<std::string, std::string> _headers;
 
 	int	fds[2];
 	int	pid;
@@ -18,8 +19,7 @@ class CGI {
 	~CGI();
 
 	void	build_headers() {
-
-	};
+	}
 };
 
 }  // namespace Server

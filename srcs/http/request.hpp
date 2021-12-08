@@ -117,13 +117,6 @@ class Request {
 	METHODS		get_method() const { return _method; }
 	const std::string get_uri() const { return _uri; }
 	const std::string get_host() const { return _host; }
-		HeadersObject::const_iterator it = _headers.find(headerName);
-		if (it == _headers.end()) {
-			return "";
-		} else {
-			return it->second;
-		}
-	}
 	bool		get_header_status() const { return _headers_ready; }
 
 
