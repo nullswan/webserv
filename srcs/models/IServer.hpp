@@ -210,8 +210,10 @@ class IServer : public Webserv::Models::IBlock {
 
 		time_t now = time(0);
 		for (; it != _sessions.end(); ++it) {
-			if (it->second.expire_at < now)
+			if (it->second.expire_at < now) {
 				delete_session(it->first);
+				return expired_sessions();
+			}
 		}
 	}
 
@@ -220,7 +222,7 @@ class IServer : public Webserv::Models::IBlock {
 
 		session.expire_at = time(0) + WEBSERV_SESSION_TIMEOUT;
 		session.jar = new CookieJar();
-		session.jar->push_back(std::make_pair("WEBSERV_SID", session_id));
+		// session.jar->push_back(std::make_pair("WEBSERV_SID", session_id));
 		std::pair<Sessions::iterator, bool> it =
 			_sessions.insert(std::pair<std::string, SessionObj>(session_id, session));
 		if (!it.second) {
@@ -248,7 +250,6 @@ class IServer : public Webserv::Models::IBlock {
 	}
 
 	// Other
-
 	IServer *clone() const {
 		return new IServer(*this);
 	}

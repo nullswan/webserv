@@ -107,13 +107,10 @@ static const std::string color_code(const STATUS_CODE &status_code) {
 std::string rand_string(const int len) {
 	static const char alphanum[] =
 		"0123456789"
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz";
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
-
-	srand((unsigned)time(NULL) * tv.tv_usec);
-
+	srand(tv.tv_usec);
 	std::string ret;
 	ret.reserve(len);
 

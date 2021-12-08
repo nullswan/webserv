@@ -77,6 +77,7 @@ class Response {
 		else
 			_headers[key] = value;
 	}
+	const SetCookieJar	*get_set_cookies() { return &_set_cookies; }
 
  private:
 	void	GET(const Models::IBlock *block) {
@@ -257,13 +258,15 @@ class Response {
 		head << "HTTP/1.1 " << _status << " " << resolve_code(_status) << "\r\n";
 
 		std::string headers;
-		for (HeadersObject::iterator it = _headers.begin();
-			it != _headers.end(); ++it)
-			headers += it->first + ": " + it->second + "\r\n";
-		for (SetCookieJar::iterator it = _set_cookies.begin();
-			it != _set_cookies.end(); ++it)
-			headers += "Set-Cookie: " + *it + "\r\n";
+		HeadersObject::iterator header_it = _headers.begin();
+		for (; header_it != _headers.end(); ++header_it)
+			headers += header_it->first + ": " + header_it->second + "\r\n";
 
+		#ifndef WEBSERV_BENCHMARK
+		SetCookieJar::iterator cookie_it = _set_cookies.begin();
+		for (; cookie_it != _set_cookies.end(); ++cookie_it)
+			headers += "Set-Cookie: " + *cookie_it + "\r\n";
+		#endif
 		return head.str() + headers + "\r\n";
 	}
 

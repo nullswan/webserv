@@ -119,18 +119,32 @@ class Client {
 	}
 
 	const std::string &_open_session() {
-		const std::string req_cookies = req->get_header_value("Cookie");
-		if (req_cookies.find("WEBSERV_SID=") != std::string::npos) {
-			_sess_id = req_cookies.substr(req_cookies.find("WEBSERV_SID=") + 13);
+		const std::string req_cookies = req->get_header_value("cookie");
+		const std::size_t pos = req_cookies.find("webserv_sid=");
+		if (pos != std::string::npos &&
+			pos + 12 + WEBSERV_SESSION_ID_LENGTH >= req_cookies.size()) {
+			_sess_id = req_cookies.substr(pos + 12, pos + 12 + WEBSERV_SESSION_ID_LENGTH);
 			Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
-			if (cookies != NULL)
+			if (cookies != NULL) {
+				std::cout << "cookies already presents" << std::endl;
+				Models::IServer::CookieJar::iterator it = cookies->begin();
+				while (it != cookies->end()) {
+					// as we receive a webserv_sid which is valid we dont need to re-set the cookie
+					if (it->first == "webserv_sid")
+						continue;
+					resp->add_header("Set-Cookie", it->first + "=" + it->second);
+					it++;
+				}
 				return _sess_id;
+			}
 		}
 
 		_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
 		while (!_master->add_session(_sess_id))
 			_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
-		resp->add_header("Set-Cookie", "WEBSERV_SID=" + _sess_id + "; path=/");
+		std::stringstream ss;
+		ss << "WEBSERV_SID=" << _sess_id << "; Max-Age=" << WEBSERV_SESSION_TIMEOUT;
+		resp->add_header("Set-Cookie", ss.str());
 		return _sess_id;
 	}
 
@@ -148,6 +162,18 @@ class Client {
 	}
 
 	void	_gather_cookie_jar() const {
+		const std::vector<std::string> *cookies = resp->get_set_cookies();
+
+		if (cookies->size() == 0)
+			return;
+
+		Models::IServer::CookieJar *jar = _master->get_cookies_jar(_sess_id);
+		std::vector<std::string>::const_iterator it = cookies->begin();
+		for (; it != cookies->end(); ++it) {
+			std::string key = it->substr(0, it->find("="));
+			std::string value = it->substr(it->find("=") + 1);
+			jar->push_back(std::make_pair(key, value));
+		}
 		// parser cgi return to get Set-Cookies
 	}
 
