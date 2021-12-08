@@ -13,13 +13,12 @@ class Session {
  private:
 	std::string	_id;
 	time_t		_expire;
-	
+
 
  public:
-	Session(const std::string &id)
+	explicit Session(const std::string &id)
 	:	_id(id),
-		_expire(time(NULL) + WEBSERV_SESSION_TIMEOUT)
-	{}
+		_expire(time(NULL) + WEBSERV_SESSION_TIMEOUT) {}
 
 	bool	alive(time_t ttime) {
 		return ttime > _expire;
