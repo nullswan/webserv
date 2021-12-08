@@ -147,13 +147,6 @@ class IServer : public Webserv::Models::IBlock {
 		return this;
 	}
 
-	const ILocation
-	*get_location_using_vhosts(const std::string &host,
-		const std::string &uri) const {
-		const IServer *vhost = get_vhost(host);
-		return vhost->get_location(uri);
-	}
-
 	const IBlock
 	*get_block_using_vhosts(const std::string &host,
 		const std::string &uri) const {

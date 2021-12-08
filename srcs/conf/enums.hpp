@@ -4,7 +4,7 @@
 namespace Webserv {
 namespace Conf {
 
-enum	E_CONF_TOKEN : int {
+enum	E_CONF_TOKEN {
 	CONF_EMPTY_TOKEN = 0,
 	CONF_NOT_FOUND_TOKEN,
 	CONF_ERRORENOUS_TOKEN,
@@ -22,7 +22,7 @@ enum	E_CONF_TOKEN : int {
 	CONF_BLOCK_BODY_LIMIT,
 	CONF_BLOCK_UPLOAD_PASS,
 	CONF_BLOCK_ALLOWED_METHODS,
-	CONF_TOKEN_MAX,
+	CONF_TOKEN_MAX
 };
 
 static const char DEFAULT_CONF_FILE[] = "server {\n"

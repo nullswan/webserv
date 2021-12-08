@@ -4,7 +4,7 @@
 namespace Webserv {
 namespace HTTP {
 
-enum METHODS : int {
+enum METHODS {
 	METH_GET,
 	METH_POST,
 	METH_DELETE,
@@ -17,20 +17,20 @@ enum METHODS : int {
 	METH_UNKNOWN
 };
 
-enum FORM : int {
+enum FORM {
 	FORM_URLENCODED,
 	FORM_MULTIPART,
 	FORM_UNKNOWN
 };
 
-enum READ : int {
+enum READ {
 	READ_OK,
 	READ_EOF,
 	READ_ERROR,
-	READ_WAIT,
+	READ_WAIT
 };
 
-enum STATUS_CODE : int {
+enum STATUS_CODE {
 	CONTINUE = 100,
 	SWITCHING_PROTOCOLS = 101,
 	PROCESSING = 102,
