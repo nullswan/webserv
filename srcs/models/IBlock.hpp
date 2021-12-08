@@ -63,40 +63,44 @@ class IBlock {
 	~IBlock() {}
 
 	// Name & Port
-	std::string	get_name() const { return _name; }
-	int			get_port() const { return _port; }
+	const std::string	&get_name() const { return _name; }
+	const int			&get_port() const { return _port; }
 
 	// Root
 	void set_root(const std::string& root) { _root = root; }
-	std::string get_root() const { return _root; }
+	const std::string &get_root() const { return _root; }
 
 	// Upload Pass
 	void set_upload_pass(const std::string& pass) { _upload_pass = pass; }
-	std::string get_upload_pass() const { return _upload_pass; }
+	const std::string &get_upload_pass() const { return _upload_pass; }
 
 	// Redirection, redirection_code
 	void set_redirection(const std::string& redirection, const int code) {
 		_redirection = redirection;
 		_redirection_code = code;
 	}
-	std::string get_redirection() const { return _redirection; }
-	int 		get_redirection_code() const { return _redirection_code; }
+	const std::string 	&get_redirection() const { return _redirection; }
+	const int 			&get_redirection_code() const { return _redirection_code; }
 
 	// Body Limit
 	void set_body_limit(size_t limit) { _body_limit = limit; }
-	size_t get_body_limit() const { return _body_limit; }
+	const size_t &get_body_limit() const { return _body_limit; }
 
 	// Allowed Methods
 	void set_method(HTTP::METHODS method, bool value) {
 		_methods_allowed[method] = value;
 	}
-	bool get_method(HTTP::METHODS method) const {
+	const bool &get_method(HTTP::METHODS method) const {
 		return _methods_allowed[method];
+	}
+	void	deny_all_methods() {
+		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++)
+			_methods_allowed[i] = false;
 	}
 
 	// Autoindex
 	void set_autoindex(bool value) { _autoindex = value; }
-	bool get_autoindex() const { return _autoindex; }
+	const bool &get_autoindex() const { return _autoindex; }
 
 	// Index(s)
 	const IndexObject &get_indexs() const { return _indexs; }

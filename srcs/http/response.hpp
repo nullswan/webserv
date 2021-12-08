@@ -63,10 +63,53 @@ class Response {
 
  private:
 	void	GET(const Models::ILocation *loc) {
-		_get_file_location(loc);
+		std::string path = _build_method_path(loc, METH_GET, false);
+		if (path == "")
+			return;
+		if (loc) {
+			if (loc->get_redirection() != "") {
+				_get_redirection(loc->get_redirection(),
+					loc->get_redirection_code());
+				return;
+			}
+		} else {
+			if (_master->get_redirection() != "") {
+				_get_redirection(_master->get_redirection(),
+					_master->get_redirection_code());
+				return;
+			}
+		}
+		_get_file_path(loc, path);
 	}
 
-	bool	_get_cgi(const Models::ILocation *loc) {
+	std::string _build_method_path(const Models::ILocation *loc,
+		METHODS method, bool upload_pass) {
+		std::string path;
+
+		if (loc) {
+			if (loc->get_method(method) == false) {
+				_status = 405;
+				return "";
+			}
+			if (upload_pass && loc->get_upload_pass() != "")
+				path = loc->get_upload_pass();
+			else
+				path = loc->get_root();
+		} else {
+			if (_master->get_method(method) == false) {
+				_status = 405;
+				return "";
+			}
+			if (upload_pass && _master->get_upload_pass() != "")
+				path = _master->get_upload_pass();
+			else
+				path = _master->get_root();
+		}
+
+		return path + _req->get_uri();
+	}
+
+	bool	_cgi_pass(const Models::ILocation *loc) {
 		std::string cgi_path;
 		if (loc)
 			cgi_path = loc->get_cgi(_req->get_uri());
@@ -84,7 +127,7 @@ class Response {
 		DIR	*dirptr = opendir(path.c_str());
 		if (!dirptr) {
 			_status = 500;
-			if (errno == EACCES)
+			if (errno == EACCES || errno == EPERM)
 				_status = 403;
 			if (errno == ENOENT)
 				_status = 404;
@@ -133,23 +176,6 @@ class Response {
 		return true;
 	}
 
-	bool	_get_file_location(const Models::ILocation *loc) {
-		std::string path;
-		if (!loc) {
-			if (_master->get_redirection() != "")
-				return _get_redirection(_master->get_redirection(),
-					_master->get_redirection_code());
-			path = _master->get_root();
-		} else {
-			if (loc->get_redirection() != "")
-				return _get_redirection(loc->get_redirection(),
-					loc->get_redirection_code());
-			path = loc->get_root();
-		}
-		path += _req->get_uri();
-		return _get_file_path(loc, path);
-	}
-
 	bool	_get_redirection(const std::string &path, const int &code) {
 		_status = code;
 		_headers["Location"] = path;
@@ -157,7 +183,8 @@ class Response {
 	}
 
 	bool	_get_file_path(const Models::ILocation *loc, const std::string &path) {
-		_get_cgi(loc);
+		if (_cgi_pass(loc))
+			return true;
 
 		if (path[path.size() - 1] == '/')
 			return _get_dir(loc, path);
@@ -197,6 +224,26 @@ class Response {
 		return false;
 	}
 
+	void	DELETE(const Models::ILocation *loc) {
+		std::string path = _build_method_path(loc, METH_DELETE, true);
+		if (path == "")
+			return;
+
+		// if (_cgi_pass(loc))
+		// 	return;
+
+		errno = 0;
+		if (remove(path.c_str()) == -1) {
+			_status = 500;
+			if (errno == ENOENT || errno == ENOTDIR)
+				_status = 404;
+			else if (errno == EACCES || errno == EPERM || errno == 39)
+				_status = 403;
+			return;
+		}
+		_status = 204;
+	}
+
 	void	invoke() {
 		const Models::ILocation	*loc = _master->get_location_using_vhosts(
 			_req->get_host(), _req->get_uri());
@@ -204,7 +251,8 @@ class Response {
 		if (_req->get_method() == METH_GET)
 			GET(loc);
 		// else if (_req->get_method() == METH_POST)
-		// else if (_req->get_method() == METH_DELETE)
+		else if (_req->get_method() == METH_DELETE)
+			DELETE(loc);
 		else
 			_status = 501;
 	}

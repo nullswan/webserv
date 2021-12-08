@@ -35,26 +35,15 @@ class ILocation : public Webserv::Models::IBlock {
 		const std::string &path,
 		const std::string &root,
 		const std::string &upload_pass,
-		const std::string &redirection,
-		const int &redirection_code,
 		const size_t &body_limit,
-		const bool methods_allowed[WEBSERV_METHODS_SUPPORTED],
-		const bool &autoindex,
-		const std::vector<std::string> indexs,
 		const std::map<int, std::string> error_pages)
 	:	_path(path) {
 		_name = name;
 		_port = port;
 		_root = root;
 		_upload_pass = upload_pass;
-		_redirection = redirection;
-		_redirection_code = redirection_code;
 		_body_limit = body_limit;
-		_autoindex = autoindex;
-		_indexs = indexs;
 		_error_pages = error_pages;
-		for (int i = 0; i < WEBSERV_METHODS_SUPPORTED; i++)
-			_methods_allowed[i] = methods_allowed[i];
 	}
 
 	ILocation *clone() { return new ILocation(*this); }
