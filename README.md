@@ -34,7 +34,12 @@ School 42 Project - Build HTTP/1.1 resilient server.
 - VHosts
 - Fully configurable (view https://github.com/c3b5aw/webserv/blob/config/docs/config_file.md)
 - Support Cookies and Session
-- (In progress) Support CGI
+- Support CGI
+
+## Sessions
+```
+make SESSION=enable
+```
 
 ## Optimizations
 

@@ -14,8 +14,8 @@
 
 #include "http/codes.hpp"
 #include "http/request.hpp"
-#include "models/IServer.hpp"
 #include "server/cgi.hpp"
+#include "models/IServer.hpp"
 #include "server/autoindex.hpp"
 
 namespace Webserv {
@@ -39,22 +39,19 @@ class Response {
 
 	int _status;
 
-	Request *_req;
-	IServer	*_master;
-	Server::CGI 	*_cgi;
+	Request 	*_req;
+	IServer		*_master;
 
  public:
 	explicit Response(Request *request)
 	:	_status(request->get_code()),
 		_req(request),
-		_master(0),
-		_cgi(0) {}
+		_master(0) {}
 
 	explicit Response(int code)
 	:	_status(code),
 		_req(0),
-		_master(0),
-		_cgi(0) {}
+		_master(0) {}
 
 	bool	prepare(IServer *master) {
 		_master = master;
@@ -123,10 +120,9 @@ class Response {
 
 	bool	_cgi_pass(const Models::IBlock *block) {
 		std::string cgi_path = block->get_cgi(_req->get_uri());
-		if (cgi_path != "") {
-			std::cout << "run cgi" << std::endl;
-			_cgi = 0;
-		}
+		if (cgi_path == "")
+			return false;
+		
 		return false;
 	}
 
