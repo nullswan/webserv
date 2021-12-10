@@ -151,12 +151,13 @@ class Client {
 
 	#ifdef WEBSERV_SESSION
 	void	_save_session() {
-		if (_sid != "")
+		if (_sid == "")
 			return;
 
 		Session *sess = _master->get_session(_sid);
 		if (!sess)
 			return;
+		sess->refresh();
 
 		Cookies::iterator id = resp->get_cookies_set()->find(WEBSERV_SESSION_ID);
 		if (id != resp->get_cookies_set()->end() && id->second != _sid) {
