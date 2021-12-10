@@ -14,6 +14,7 @@
 namespace Webserv {
 namespace HTTP {
 class Request {
+ public:
 	typedef std::map<std::string, std::string> HeadersObject;
 	typedef std::map<std::string, std::string> FormObject;
 
@@ -129,6 +130,9 @@ class Request {
 	const std::string get_query() const { return _query; }
 	const std::string get_host() const { return _host; }
 	bool		get_header_status() const { return _headers_ready; }
+	const HeadersObject &get_headers() {
+		return _headers;
+	}
 	const std::string get_header_value(const std::string &headerName) const {
 		HeadersObject::const_iterator it = _headers.find(headerName);
 		if (it != _headers.end())

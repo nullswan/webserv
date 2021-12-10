@@ -1,6 +1,8 @@
 #ifndef SERVER_CGI_HPP_
 #define SERVER_CGI_HPP_
 
+#include <stdlib.h>
+#include <string.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
@@ -9,7 +11,7 @@
 #include <utility>
 
 #include "http/request.hpp"
-#include "http/response.hpp"
+#include "http/utils.hpp"
 
 namespace Webserv {
 namespace Server {
@@ -18,19 +20,22 @@ class CGI {
  public:
 	typedef std::multimap<std::string, std::string> Headers;
 	typedef std::pair<std::string, std::string>		HeaderPair;
+	typedef std::map<std::string, std::string> 		EnvVar;
 
  private:
 	const std::string	_bin_path;
 	const std::string	_file_path;
-	const std::string	_query_string;
 	const std::string	_out_file;
 
-	HTTP::METHODS		_method;
+	EnvVar	_env;
 
-	std::string	_body;
-	Headers		_headers;
+	HTTP::METHODS	_method;
 
-	int		_link[2];
+	std::string		_body;
+	Headers			_headers;
+
+	int		_fds[2];
+	int		_out_fd;
 	pid_t	_pid;
 
  public:
@@ -39,18 +44,44 @@ class CGI {
 		const HTTP::METHODS &method)
 	:	_bin_path(bin_path),
 		_file_path(file_path),
-		_query_string(query),
-		_out_file(rand_string(16)),
-		_method(method) {}
+		_out_file(HTTP::rand_string(16)),
+		_method(method) {
+		_env["QUERY_STRING"] = query;
+	}
 
+	~CGI() {
+		_delete_temp_file();
+	}
 
-	bool	setup() {
-		if (pipe(_link) == -1)
+	bool	setup(const std::string &request_data,
+		const HTTP::Request::HeadersObject &headers) {
+		if (pipe(_fds) == -1)
 			return false;
-		// write req->content in pipe[1]
-		outfile = open(tmp_file.c_str(), O_RDWR | O_CREAT, S_IWRITE | S_IREAD);
+
+		write(_fds[1], request_data.c_str(), request_data.size());
+		_env["CONTENT_LENGTH"] = request_data.size();
+
+		_out_fd = open(_out_file.c_str(), O_RDWR | O_CREAT, S_IWRITE | S_IREAD);
+		if (_out_fd == -1)
+			return false;
+		close(_fds[STDOUT_FILENO]);
+		return setup_env(headers);
+	}
+
+	bool	setup_env(const HTTP::Request::HeadersObject &headers) {
+		HTTP::Request::HeadersObject::const_iterator it = headers.begin();
+		for (; it != headers.end(); ++it) {
+			_env["HTTP_" + _to_upper(it->first)] = it->second;
+		}
+
+		_env["GATEWAY_INTERFACE"] = "CGI/1.1";
+		// _env["CONTENT_TYPE"] = "";
+		// _env["PATH_TRANSLATED"] = "";
+		// _env["REQUEST_METHOD"] = "";
+		// _env["SCRIPT_NAME"] = "";
+		_env["REDIRECT_STATUS"] = "200";
 		(void)_method;
-		(void)_query_string;
+		// headers startswith HTTP
 		return true;
 	}
 
@@ -61,18 +92,20 @@ class CGI {
 		if (_pid < 0) {
 			return false;
 		} else if (_pid == 0) {
-			dup2(_link[STDOUT_FILENO], STDOUT_FILENO);
-			close(_link[STDIN_FILENO]);
-			close(_link[STDOUT_FILENO]);
+			dup2(_fds[STDIN_FILENO], STDIN_FILENO);
+			dup2(_out_fd, STDOUT_FILENO);
+			close(_fds[STDIN_FILENO]);
+
 			char	*argv[] = {
-				(char *)_bin_path.c_str(), (char *)_file_path.c_str(), NULL};
-			if (execve(argv[0], argv, NULL) == -1)
+				const_cast<char*>(_bin_path.c_str()),
+				const_cast<char*>(_file_path.c_str()),
+			NULL};
+
+			if (execve(argv[0], argv, _dump_env()) == -1)
 				exit(EXIT_FAILURE);
-			exit(0);
 		} else {
 			waitpid(_pid, &_wait, 0);
-			close(_link[STDOUT_FILENO]);
-
+			close(_out_fd);
 			return _extract_response();
 		}
 		return true;
@@ -85,25 +118,65 @@ class CGI {
 		return _headers;
 	}
 
- private:	
-	bool	_extract_response() {
-		char	buf[4096];
-		while (read(_link[0], buf, 4096) > 0)
-			_body += std::string(buf);
-		return _parse_response_headers();
+ private:
+	void	_delete_temp_file() { remove(_out_file.c_str()); }
+
+	char	**_dump_env() {
+		char **ret = reinterpret_cast<char**>(
+				malloc(sizeof(char *) * (_env.size() + 1)));
+		ret[_env.size()] = 0;
+
+		EnvVar::const_iterator it = _env.begin();
+		for (std::size_t i = 0; it != _env.end(); ++it, i++) {
+			std::string payload = it->first + "=" + it->second;
+			ret[i] = strdup(payload.c_str());
+		}
+		return ret;
 	}
 
-	bool	_parse_response_headers() {
-		std::string headers = _body.substr(0, _body.find("\r\n\r\n"));
-		_body = _body.substr(_body.find("\r\n\r\n") + 2);
+	bool	_extract_response() {
+		std::ifstream	file(_out_file.c_str());
+		if (!file.is_open())
+			return false;
+		std::string data((std::istreambuf_iterator<char>(file)),
+			std::istreambuf_iterator<char>());
+		file.close();
+		std::cout << data << std::endl;
+		return _parse_headers(data);
+	}
 
-		do {
-			std::string key = headers.substr(0, headers.find(":"));
-			std::string value = headers.substr(headers.find(":") + 2, headers.find("\r\n"));
-			std::cout << "key: " << key << ": " << value << std::endl;
+	static inline std::string _to_upper(std::string in) {
+		for (std::size_t i = 0; i < in.size(); i++) {
+			if (i >= 'a' || i <= 'A')
+				in[i] = i - 32;
+		}
+		return in;
+	}
+
+	bool	_parse_headers(std::string data) {
+		std::size_t sep_pos = data.find("\r\n\r\n");
+		if (sep_pos == std::string::npos)
+			return false;
+
+		std::string headers = data.substr(0, sep_pos);
+		_body = data.substr(sep_pos + 4);
+
+		while ((sep_pos = headers.find(": ")) != std::string::npos) {
+			const std::string key = headers.substr(0, sep_pos);
+
+			std::size_t nl_pos = 0;
+			while (headers[nl_pos] != '\r')
+				++nl_pos;
+			std::string value = headers.substr(sep_pos + 2, nl_pos);
+
+			if (value.find("\r") != std::string::npos)
+				value = value.substr(0, value.find("\r"));
+
 			_headers.insert(HeaderPair(key, value));
-			headers = headers.substr(headers.find("\r\n") + 2);
-		} while (headers.find("\r\n") != std::string::npos);
+			if (key.size() + 2 + value.size() >= headers.size())
+				break;
+			headers = headers.substr(nl_pos + 2);
+		}
 		return true;
 	}
 };

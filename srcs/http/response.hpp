@@ -71,13 +71,10 @@ class Response {
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
 	void	add_header(const std::string &key, const std::string &value) {
-		// std::cout << "Adding cookie: " << key << " = " << value << std::endl;
-		if (key.find("WEBSERV") != std::string::npos) {
+		if (value.find(WEBSERV_COOKIE_PREFIX) != std::string::npos)
 			_cookies_to_set.insert(SetCookiePair(key, value));
-			// std::cout << "found" << std::endl;
-		} else {
+		else
 			_headers[key] = value;
-		}
 	}
 	#ifdef WEBSERV_SESSION
 	Cookies	*get_cookies_set() {
@@ -120,10 +117,10 @@ class Response {
 		Server::CGI cgi = Server::CGI(cgi_path,
 			block->get_root() + _req->get_uri(), _req->get_query(),
 			_req->get_method());
-		if (!cgi.setup())
+		if (!cgi.setup(_req->get_raw_request(), _req->get_headers()) || !cgi.run()) {
 			set_status(HTTP::INTERNAL_SERVER_ERROR);
-		if (!cgi.run())
-			set_status(HTTP::INTERNAL_SERVER_ERROR);
+			return false;
+		}
 		_body = cgi.get_output();
 		for (Server::CGI::Headers::const_iterator it = cgi.get_headers().begin();
 			it != cgi.get_headers().end(); ++it)
@@ -278,8 +275,12 @@ class Response {
 			headers += hit->first + ": " + hit->second + "\r\n";
 
 		Cookies::const_iterator cit = _cookies_to_set.begin();
-		for (; cit != _cookies_to_set.end(); ++cit)
-			headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
+		for (; cit != _cookies_to_set.end(); ++cit) {
+			if (cit->first == "Set-Cookie")
+				headers += cit->first  + "=" + cit->second + "\r\n";
+			else
+				headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
+		}
 		return head.str() + headers + "\r\n";
 	}
 
