@@ -119,7 +119,7 @@ class Response {
 			return false;
 		Server::CGI cgi = Server::CGI(cgi_path,
 			block->get_root() + _req->get_uri(), _req->get_query(),
-			req->get_method());
+			_req->get_method());
 		if (!cgi.setup())
 			set_status(HTTP::INTERNAL_SERVER_ERROR);
 		if (!cgi.run())

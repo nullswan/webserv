@@ -23,6 +23,7 @@ class CGI {
 	const std::string	_bin_path;
 	const std::string	_file_path;
 	const std::string	_query_string;
+	const std::string	_out_file;
 
 	HTTP::METHODS		_method;
 
@@ -39,12 +40,16 @@ class CGI {
 	:	_bin_path(bin_path),
 		_file_path(file_path),
 		_query_string(query),
+		_out_file(rand_string(16)),
 		_method(method) {}
 
 
 	bool	setup() {
 		if (pipe(_link) == -1)
 			return false;
+		// write req->content in pipe[1]
+		outfile = open(tmp_file.c_str(), O_RDWR | O_CREAT, S_IWRITE | S_IREAD);
+		(void)_method;
 		(void)_query_string;
 		return true;
 	}
@@ -90,13 +95,15 @@ class CGI {
 
 	bool	_parse_response_headers() {
 		std::string headers = _body.substr(0, _body.find("\r\n\r\n"));
-		_body = _body.substr(_body.find("\r\n\r\n") + 4);
-		// do {
-		// 	std::string key = headers.substr(0, headers.find(":"));
-		// 	std::string value = headers.substr(headers.find(":") + 2, headers.find("\r\n"));
-		// 	_headers.insert(HeaderPair(key, value));
-		// 	headers = headers.substr(headers.find("\r\n") + 2);
-		// } while (headers.find("\n") != std::string::npos);
+		_body = _body.substr(_body.find("\r\n\r\n") + 2);
+
+		do {
+			std::string key = headers.substr(0, headers.find(":"));
+			std::string value = headers.substr(headers.find(":") + 2, headers.find("\r\n"));
+			std::cout << "key: " << key << ": " << value << std::endl;
+			_headers.insert(HeaderPair(key, value));
+			headers = headers.substr(headers.find("\r\n") + 2);
+		} while (headers.find("\r\n") != std::string::npos);
 		return true;
 	}
 };
