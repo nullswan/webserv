@@ -446,6 +446,8 @@ class Parser {
 					return errorneous_line_error(line, line_nbr);
 			}
 		}
+		if (scope != 0)
+			return invalid_value_error("EOF", line_nbr);
 		return true;
 	}
 };
