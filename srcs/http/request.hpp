@@ -5,6 +5,7 @@
 
 #include <map>
 #include <string>
+#include <utility>
 #include <iostream>
 
 #include "http/enums.hpp"
@@ -129,9 +130,20 @@ class Request {
 			return it->second;
 		return "";
 	}
+
+	#ifndef WEBSERV_BENCHMARK
 	const Cookies &get_cookies() const {
 		return _cookies;
 	}
+	void	add_cookie(const std::string &key, const std::string &value) {
+		_cookies[key] = value;
+		HeadersObject::iterator it = _headers.find("cookies");
+		if (it == _headers.end())
+			_headers["cookies"] = key + "=" + value;
+		else
+			_headers["cookies"] += ";" + key + "=" + value;
+	}
+	#endif
 
 	void	__repr__() {
 		std::cout << "Request{" << std::endl;
@@ -260,6 +272,7 @@ class Request {
 		return true;
 	}
 
+	#ifndef WEBSERV_BENCHMARK
 	void	_extract_cookies(std::string data) {
 		try {
 			while (data.find(";")) {
@@ -274,6 +287,7 @@ class Request {
 			return;
 		}
 	}
+	#endif
 
 	void	_extract_urlencoded() {
 		size_t form_separator_pos;

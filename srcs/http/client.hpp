@@ -9,6 +9,7 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <map>
 #include <ctime>
 #include <vector>
 #include <string>
@@ -26,6 +27,7 @@ namespace HTTP {
 class Client {
 	typedef Webserv::HTTP::Request		Request;
 	typedef Webserv::Models::IServer	IServer;
+	typedef std::map<std::string, std::string> Cookies;
 
  private:
 	IServer	*_master;
@@ -99,13 +101,13 @@ class Client {
 		if (resp)
 			delete resp;
 		resp = new Response(req);
-		// #ifndef WEBSERV_BENCHMARK
-			// _manage_cookie_jar();
-		// #endif
+		#ifndef WEBSERV_BENCHMARK
+		_start_session();
+		#endif
 		resp->prepare(_master);
-		// #ifndef WEBSERV_BENCHMARK
-		// 	_gather_cookie_jar();
-		// #endif
+		#ifndef WEBSERV_BENCHMARK
+		_save_session();
+		#endif
 		send(_fd, resp->toString(), resp->size(), 0);
 		return _close();
 	}
@@ -116,65 +118,45 @@ class Client {
 	}
 
  private:
-	// bool	_session_openned() const {
-	// 	return _sess_id != "";
-	// }
+	#ifndef WEBSERV_BENCHMARK
+	void	_start_session() {
+		if (_sid != "")
+			return;
 
-	// const std::string &_open_session() {
-	// 	const std::string req_cookies = req->get_header_value("cookie");
-	// 	const std::size_t pos = req_cookies.find(WEBSERV_SESSION_ID + "=");
-	// 	if (pos != std::string::npos &&
-	// 		pos + 12 + WEBSERV_SESSION_ID_LENGTH >= req_cookies.size()) {
-	// 		_sess_id = req_cookies.substr(pos + 12,
-	// 			pos + 12 + WEBSERV_SESSION_ID_LENGTH);
-	// 		Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
-	// 		if (cookies != NULL) {
-	// 			Models::IServer::CookieJar::iterator it = cookies->begin();
-	// 			while (it != cookies->end()) {
-	// 				if (it->first == WEBSERV_SESSION_ID)
-	// 					continue;
-	// 				resp->add_header("Set-Cookie", it->first + "=" + it->second);
-	// 				it++;
-	// 			}
-	// 			return _sess_id;
-	// 		}
-	// 	}
+		const Cookies	&req_cookies = req->get_cookies();
+		Cookies::const_iterator it = req_cookies.find(WEBSERV_SESSION_ID);
+		if (it != req_cookies.end()) {
+			Session *sess = _master->get_session(it->second);
+			if (sess) {
+				Cookies::const_iterator sit = sess->cookies.begin();
+				for (; sit != sess->cookies.end(); ++sit) {
+					req->add_cookie(sit->first, sit->second);
+					resp->add_header("Set-Cookie",
+						sit->first + "=" + sit->second);
+				}
+				return;
+			}
+		}
 
-	// 	_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
-	// 	while (!_master->add_session(_sess_id))
-	// 		_sess_id = rand_string(WEBSERV_SESSION_ID_LENGTH);
-	// 	resp->add_header("Set-Cookie", WEBSERV_SESSION_ID << "=" << _sess_id);
-	// 	return _sess_id;
-	// }
+		_sid = rand_string(WEBSERV_SESSION_ID_LENGTH);
+		while (!_master->add_session(_sid))
+			_sid = rand_string(WEBSERV_SESSION_ID_LENGTH);
+		resp->add_header("Set-Cookie", std::string(WEBSERV_SESSION_ID) + "=" + _sid);
+		req->add_cookie(WEBSERV_SESSION_ID, _sid);
+	}
 
-	// void	_manage_cookie_jar() {
-	// 	if (!_session_openned())
-	// 		_open_session();
-	// 	Models::IServer::CookieJar *cookies = _master->get_cookies_jar(_sess_id);
-	// 	if (!cookies) {
-	// 		_open_session();
-	// 	} else {
-	// 		Models::IServer::CookieJar::iterator it;
-	// 		for (it = cookies->begin(); it != cookies->end(); ++it)
-	// 			resp->add_header(it->first, it->second);
-	// 	}
-	// }
+	void	_save_session() {
+		if (_sid != "")
+			return;
 
-	// void	_gather_cookie_jar() const {
-	// 	const std::vector<std::string> *cookies = resp->get_set_cookies();
-
-	// 	if (cookies->size() == 0)
-	// 		return;
-
-	// 	Models::IServer::CookieJar *jar = _master->get_cookies_jar(_sess_id);
-	// 	std::vector<std::string>::const_iterator it = cookies->begin();
-	// 	for (; it != cookies->end(); ++it) {
-	// 		std::string key = it->substr(0, it->find("="));
-	// 		std::string value = it->substr(it->find("=") + 1);
-	// 		jar->push_back(std::make_pair(key, value));
-	// 	}
-	// 	// parser cgi return to get Set-Cookies
-	// }
+		// Cookies::const_iterator it = resp->
+		// read Set-Cookies
+		// if WEBSERV_SESSION_ID != _sid
+		// 	reset and close current session
+		// if WEBSERV_PREFIX
+		// 	if not in cookie jar, add to cookie jar
+	}
+	#endif
 
 	READ	_request_status() {
 		bool header_status = req->get_header_status();
