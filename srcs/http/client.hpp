@@ -141,7 +141,7 @@ class Client {
 				for (; sit != sess->cookies.end(); ++sit) {
 					req->add_cookie(sit->first, sit->second);
 					resp->add_header("Set-Cookie",
-						sit->first + "=" + sit->second);
+						sit->first + "=" + sit->second + "; path=/");
 				}
 				return;
 			}
@@ -150,7 +150,8 @@ class Client {
 		_sid = rand_string(WEBSERV_SESSION_ID_LENGTH);
 		while (!_master->add_session(_sid))
 			_sid = rand_string(WEBSERV_SESSION_ID_LENGTH);
-		resp->add_header("Set-Cookie", std::string(WEBSERV_SESSION_ID) + "=" + _sid);
+		resp->add_header("Set-Cookie", std::string(WEBSERV_SESSION_ID) +
+			"=" + _sid + "; path=/");
 		req->add_cookie(WEBSERV_SESSION_ID, _sid);
 	}
 	#endif

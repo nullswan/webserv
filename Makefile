@@ -8,7 +8,7 @@ SRCS_DIR	:= ./srcs/
 
 DBFLAGS = -pedantic -Wunreachable-code -Wunused
 BFLAGS = -D WEBSERV_BUILD_COMMIT=\"@$(BUILD_COMMIT)\"
-ifeq ($(SESSION), true)
+ifeq ($(SESSION), enable)
 	ESESSION = -D WEBSERV_SESSION=1
 endif
 CFLAGS	:= -Wall -Wextra -Werror -std=c++98 -I $(SRCS_DIR) $(ESESSION)
