@@ -11,12 +11,16 @@
 #include <memory>
 #include <utility>
 
+#ifdef WEBSERV_SESSION
+#include "http/session.hpp"
+#endif
+
 #include "models/IBlock.hpp"
 #include "models/ILocation.hpp"
 
-
 namespace Webserv {
 namespace Models {
+
 class IServer : public Webserv::Models::IBlock {
  public:
 	typedef Webserv::Models::ILocation ILocation;
@@ -24,14 +28,23 @@ class IServer : public Webserv::Models::IBlock {
 	typedef std::map<std::string, ILocation *>	LocationObject;
 	typedef std::map<std::string, IServer *>	VHostsObject;
 
+	#ifdef WEBSERV_SESSION
+	typedef std::map<std::string, Session *>  	Sessions;
+	#endif
+
  protected:
 	const std::string _host;
 
 	LocationObject	_locations;
 	VHostsObject	_vhosts;
 
+	#ifdef WEBSERV_SESSION
+	Sessions	_sessions;
+	#endif
+
  public:
-	IServer() : _host("0.0.0.0") {
+	IServer()
+	:	_host("0.0.0.0") {
 		_port = 8000;
 		if (getuid() == 0)  // nginx docs set 80 to root usr
 			set_port(80);
@@ -92,6 +105,10 @@ class IServer : public Webserv::Models::IBlock {
 		VHostsObject::iterator vhost_it = _vhosts.begin();
 		for (; vhost_it != _vhosts.end(); vhost_it++)
 			delete vhost_it->second;
+
+		#ifdef WEBSERV_SESSION
+		destroy_sessions();
+		#endif
 	}
 
 	// Name
@@ -188,8 +205,60 @@ class IServer : public Webserv::Models::IBlock {
 		return get_error_page(status, uri);
 	}
 
-	// Other
+	// Cookies / Sessions
+	#ifdef WEBSERV_SESSION
+	void	destroy_sessions() {
+		Sessions::iterator it = _sessions.begin();
+		for (; it != _sessions.end(); it++)
+			delete it->second;
+	}
+	#endif
 
+	#ifdef WEBSERV_SESSION
+	void	collect_sessions() {
+		time_t now = time(0);
+		Sessions::iterator it = _sessions.begin();
+		for (; it != _sessions.end(); it++) {
+			if (!it->second->alive(now)) {
+				delete it->second;
+				_sessions.erase(it);
+				return collect_sessions();
+			}
+		}
+	}
+	#endif
+
+	#ifdef WEBSERV_SESSION
+	Session *add_session(const std::string &sid) {
+		Session *session = new Session(sid);
+		std::pair<Sessions::iterator, bool> ret =
+			_sessions.insert(std::pair<std::string, Session *>(sid, session));
+		if (ret.second)
+			return session;
+		return 0;
+	}
+	#endif
+
+	#ifdef WEBSERV_SESSION
+	void	del_session(const std::string &sid) {
+		Sessions::iterator it = _sessions.find(sid);
+		if (it != _sessions.end()) {
+			delete it->second;
+			_sessions.erase(it);
+		}
+	}
+	#endif
+
+	#ifdef WEBSERV_SESSION
+	Session	*get_session(const std::string &sid) {
+		Sessions::iterator it = _sessions.find(sid);
+		if (it != _sessions.end())
+			return it->second;
+		return 0;
+	}
+	#endif
+
+	// Other
 	IServer *clone() const {
 		return new IServer(*this);
 	}

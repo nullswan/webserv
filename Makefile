@@ -9,7 +9,8 @@ SRCS_DIR	:= ./srcs/
 DBFLAGS = -pedantic -Wunreachable-code -Wunused
 BFLAGS = -D WEBSERV_BUILD_COMMIT=\"@$(BUILD_COMMIT)\"
 CFLAGS	:= -Wall -Wextra -Werror -std=c++98 -I $(SRCS_DIR)
-OFLAGS  := -O3 -D WEBSERV_BENCHMARK=1
+OFLAGS  :=  -D WEBSERV_BENCHMARK=1 -O3
+ESSESION := -D WEBSERV_SESSION=1
 DFLAGS	= -MMD -MF $(@:.o=.d)
 SHELL	:= /bin/bash
 
@@ -26,7 +27,7 @@ all		: $(NAME)
 $(NAME)	: $(OBJS)
 	@	printf "Compiling $(NAME)\n"
 ifneq ($(MODE), benchmark)
-	@	$(CC) $(CFLAGS) $(BFLAGS) $^ -o $@ -g3
+	@	$(CC) $(CFLAGS) $(BFLAGS) $^ -o $@ $(ESESSION) -g3
 else
 	@	$(CC) $(CFLAGS) $(BFLAGS) $^ -o $@ $(OFLAGS)
 endif
@@ -35,7 +36,7 @@ $(OBJS_DIR)%.o : $(SRCS_DIR)%.cpp
 	@	mkdir -p $(dir $@)
 	@	printf "Compiling: $<"
 ifneq ($(MODE), benchmark)
-	@	$(CC) $(CFLAGS) $(BFLAGS) -c $< -o $@ $(DFLAGS) -g3
+	@	$(CC) $(CFLAGS) $(BFLAGS) -c $< -o $@ $(DFLAGS) $(ESSESION) -g3
 else
 	@	$(CC) $(CFLAGS) $(BFLAGS) -c $< -o $@ $(DFLAGS) $(OFLAGS)
 endif

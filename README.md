@@ -28,12 +28,12 @@ School 42 Project - Build HTTP/1.1 resilient server.
 ## Features
 - HTTP/1.1 Support
 - 100.00% availability using epoll()
-- (In progress) Support GET, POST, DELETE
+- Support GET, POST, DELETE
 - Mimic official HTTP responses
 - Listen multiple ports
 - VHosts
 - Fully configurable (view https://github.com/c3b5aw/webserv/blob/config/docs/config_file.md)
-- (In progress) Support Cookies and Session
+- Support Cookies and Session
 - (In progress) Support CGI
 
 ## Optimizations

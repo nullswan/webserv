@@ -9,9 +9,12 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 
+#include <map>
 #include <ctime>
+#include <vector>
 #include <string>
 #include <sstream>
+#include <utility>
 
 #include "consts.hpp"
 #include "http/enums.hpp"
@@ -25,6 +28,10 @@ class Client {
 	typedef Webserv::HTTP::Request		Request;
 	typedef Webserv::Models::IServer	IServer;
 
+	#ifdef WEBSERV_SESSION
+	typedef std::map<std::string, std::string> Cookies;
+	#endif
+
  private:
 	IServer	*_master;
 
@@ -37,6 +44,10 @@ class Client {
 
 	Request		*req;
 	Response	*resp;
+
+	#ifdef WEBSERV_SESSION
+	std::string		_sid;
+	#endif
 
  public:
 	Client(IServer *master, int ev_fd)
@@ -96,17 +107,78 @@ class Client {
 		if (resp)
 			delete resp;
 		resp = new Response(req);
+		#ifdef WEBSERV_SESSION
+		_start_session();
+		#endif
 		resp->prepare(_master);
+		#ifdef WEBSERV_SESSION
+		_save_session();
+		#endif
 		send(_fd, resp->toString(), resp->size(), 0);
 		return _close();
 	}
 
-	int	get_fd() const { return _fd; }
+	int		get_fd() const { return _fd; }
 	bool	is_expired(time_t now) const {
 		return (now - ping.tv_sec) > WEBSERV_CLIENT_TIMEOUT;
 	}
 
  private:
+	#ifdef WEBSERV_SESSION
+	void	_start_session() {
+		const Cookies	&rcks = req->get_cookies();
+		const Cookies::const_iterator rit = rcks.find(WEBSERV_SESSION_ID);
+		if (_sid != "" && rit != req->get_cookies().end() && rit->second == _sid) {
+			const Session *sess = _master->get_session(_sid);
+			if (sess && sess->alive())
+				return;
+		}
+
+		if (rit != rcks.end()) {
+			const Session *sess = _master->get_session(rit->second);
+			if (sess && sess->alive()) {
+				Cookies::const_iterator sit = sess->cookies.begin();
+				for (; sit != sess->cookies.end(); ++sit) {
+					req->add_cookie(sit->first, sit->second);
+					resp->add_header("Set-Cookie",
+						sit->first + "=" + sit->second);
+				}
+				return;
+			}
+		}
+
+		_sid = rand_string(WEBSERV_SESSION_ID_LENGTH);
+		while (!_master->add_session(_sid))
+			_sid = rand_string(WEBSERV_SESSION_ID_LENGTH);
+		resp->add_header("Set-Cookie", std::string(WEBSERV_SESSION_ID) + "=" + _sid);
+		req->add_cookie(WEBSERV_SESSION_ID, _sid);
+	}
+	#endif
+
+	#ifdef WEBSERV_SESSION
+	void	_save_session() {
+		if (_sid == "")
+			return;
+
+		Session *sess = _master->get_session(_sid);
+		if (!sess)
+			return;
+		sess->refresh();
+
+		Cookies::iterator id = resp->get_cookies_set()->find(WEBSERV_SESSION_ID);
+		if (id != resp->get_cookies_set()->end() && id->second != _sid) {
+			_sid = id->second;
+			return _save_session();
+		}
+
+		Cookies::const_iterator it = resp->get_cookies_set()->begin();
+		for (; it != resp->get_cookies_set()->end(); ++it) {
+			if (it->first.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
+				sess->cookies[it->first] = it->second;
+		}
+	}
+	#endif
+
 	READ	_request_status() {
 		bool header_status = req->get_header_status();
 		const std::string request = req->get_raw_request();

@@ -10,6 +10,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <utility>
 
 #include "http/codes.hpp"
 #include "http/request.hpp"
@@ -21,13 +22,20 @@ namespace Webserv {
 namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
-	typedef std::map<std::string, std::string>		HeadersObject;
+	typedef std::map<std::string, std::string>		Headers;
+
+	#ifdef WEBSERV_SESSION
+	typedef std::multimap<std::string, std::string>	Cookies;
+	#endif
 
  private:
 	std::string _body;
 	std::string _payload;
 
-	HeadersObject _headers;
+	Headers _headers;
+	#ifdef WEBSERV_SESSION
+	Cookies _cookies_to_set;
+	#endif
 
 	int _status;
 
@@ -68,6 +76,22 @@ class Response {
 	void	set_status(int status) { _status = status; }
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
+	void	add_header(const std::string &key, const std::string &value) {
+		#ifdef WEBSERV_SESSION
+		if (key.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
+			_cookies_to_set.insert(
+				std::pair<std::string, std::string>(key, value));
+		else
+			_headers[key] = value;
+		#else
+			_headers[key] = value;
+		#endif
+	}
+	#ifdef WEBSERV_SESSION
+	Cookies	*get_cookies_set() {
+		return &_cookies_to_set;
+	}
+	#endif
 
  private:
 	void	GET(const Models::IBlock *block) {
@@ -248,10 +272,15 @@ class Response {
 		head << "HTTP/1.1 " << _status << " " << resolve_code(_status) << "\r\n";
 
 		std::string headers;
-		HeadersObject::iterator it = _headers.begin();
-		for (; it != _headers.end(); ++it)
-			headers += it->first + ": " + it->second + "\r\n";
+		Headers::const_iterator hit = _headers.begin();
+		for (; hit != _headers.end(); ++hit)
+			headers += hit->first + ": " + hit->second + "\r\n";
 
+		#ifdef WEBSERV_SESSION
+		Cookies::const_iterator cit = _cookies_to_set.begin();
+		for (; cit != _cookies_to_set.end(); ++cit)
+			headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
+		#endif
 		return head.str() + headers + "\r\n";
 	}
 
