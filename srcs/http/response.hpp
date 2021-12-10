@@ -75,9 +75,9 @@ class Response {
 		if (key.find("WEBSERV") != std::string::npos) {
 			_cookies_to_set.insert(SetCookiePair(key, value));
 			// std::cout << "found" << std::endl;
-		}
-		else
+		} else {
 			_headers[key] = value;
+		}
 	}
 	#ifdef WEBSERV_SESSION
 	Cookies	*get_cookies_set() {
