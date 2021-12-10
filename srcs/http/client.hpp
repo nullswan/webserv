@@ -27,7 +27,10 @@ namespace HTTP {
 class Client {
 	typedef Webserv::HTTP::Request		Request;
 	typedef Webserv::Models::IServer	IServer;
+
+	#ifdef WEBSERV_SESSION
 	typedef std::map<std::string, std::string> Cookies;
+	#endif
 
  private:
 	IServer	*_master;
@@ -35,13 +38,16 @@ class Client {
 	struct sockaddr_in	_addr;
 	socklen_t 			_addr_len;
 
-	std::string		_sid;
 	std::string 	_ip;
 	int				_fd;
 	struct timeval 	ping;
 
 	Request		*req;
 	Response	*resp;
+
+	#ifdef WEBSERV_SESSION
+	std::string		_sid;
+	#endif
 
  public:
 	Client(IServer *master, int ev_fd)
