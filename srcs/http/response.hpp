@@ -23,19 +23,16 @@ namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
 	typedef std::map<std::string, std::string>		Headers;
+	typedef std::pair<std::string, std::string>		SetCookiePair;
 
-	#ifdef WEBSERV_SESSION
 	typedef std::multimap<std::string, std::string>	Cookies;
-	#endif
 
  private:
 	std::string _body;
 	std::string _payload;
 
 	Headers _headers;
-	#ifdef WEBSERV_SESSION
 	Cookies _cookies_to_set;
-	#endif
 
 	int _status;
 
@@ -74,15 +71,13 @@ class Response {
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
 	void	add_header(const std::string &key, const std::string &value) {
-		#ifdef WEBSERV_SESSION
-		if (key.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
-			_cookies_to_set.insert(
-				std::pair<std::string, std::string>(key, value));
+		// std::cout << "Adding cookie: " << key << " = " << value << std::endl;
+		if (key.find("WEBSERV") != std::string::npos) {
+			_cookies_to_set.insert(SetCookiePair(key, value));
+			// std::cout << "found" << std::endl;
+		}
 		else
 			_headers[key] = value;
-		#else
-			_headers[key] = value;
-		#endif
 	}
 	#ifdef WEBSERV_SESSION
 	Cookies	*get_cookies_set() {
@@ -122,8 +117,18 @@ class Response {
 		std::string cgi_path = block->get_cgi(_req->get_uri());
 		if (cgi_path == "")
 			return false;
-		
-		return false;
+		Server::CGI cgi = Server::CGI(cgi_path,
+			block->get_root() + _req->get_uri(), _req->get_query(),
+			req->get_method());
+		if (!cgi.setup())
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
+		if (!cgi.run())
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
+		_body = cgi.get_output();
+		for (Server::CGI::Headers::const_iterator it = cgi.get_headers().begin();
+			it != cgi.get_headers().end(); ++it)
+			add_header(it->first, it->second);
+		return true;
 	}
 
 	bool _dump_files_dir(const std::string &path,
@@ -132,11 +137,11 @@ class Response {
 
 		DIR	*dirptr = opendir(path.c_str());
 		if (!dirptr) {
-			set_status(500);
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
 			if (errno == EACCES || errno == EPERM)
-				set_status(403);
+				set_status(HTTP::FORBIDDEN);
 			if (errno == ENOENT)
-				set_status(404);
+				set_status(HTTP::NOT_FOUND);
 			return false;
 		}
 
@@ -272,11 +277,9 @@ class Response {
 		for (; hit != _headers.end(); ++hit)
 			headers += hit->first + ": " + hit->second + "\r\n";
 
-		#ifdef WEBSERV_SESSION
 		Cookies::const_iterator cit = _cookies_to_set.begin();
 		for (; cit != _cookies_to_set.end(); ++cit)
 			headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
-		#endif
 		return head.str() + headers + "\r\n";
 	}
 
