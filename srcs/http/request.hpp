@@ -16,7 +16,10 @@ namespace HTTP {
 class Request {
 	typedef std::map<std::string, std::string> HeadersObject;
 	typedef std::map<std::string, std::string> FormObject;
+
+	#ifdef WEBSERV_SESSION
 	typedef std::map<std::string, std::string> Cookies;
+	#endif
 
  private:
 	struct timeval _time;
