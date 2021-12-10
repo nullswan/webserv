@@ -101,11 +101,11 @@ class Client {
 		if (resp)
 			delete resp;
 		resp = new Response(req);
-		#ifndef WEBSERV_BENCHMARK
+		#ifdef WEBSERV_SESSION
 		_start_session();
 		#endif
 		resp->prepare(_master);
-		#ifndef WEBSERV_BENCHMARK
+		#ifdef WEBSERV_SESSION
 		_save_session();
 		#endif
 		send(_fd, resp->toString(), resp->size(), 0);
@@ -118,7 +118,7 @@ class Client {
 	}
 
  private:
-	#ifndef WEBSERV_BENCHMARK
+	#ifdef WEBSERV_SESSION
 	void	_start_session() {
 		if (req->get_cookies().find(WEBSERV_SESSION_ID) == req->get_cookies().end())
 			_sid = "";
@@ -147,7 +147,9 @@ class Client {
 		resp->add_header("Set-Cookie", std::string(WEBSERV_SESSION_ID) + "=" + _sid);
 		req->add_cookie(WEBSERV_SESSION_ID, _sid);
 	}
+	#endif
 
+	#ifdef WEBSERV_SESSION
 	void	_save_session() {
 		if (_sid != "")
 			return;

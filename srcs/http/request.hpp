@@ -35,7 +35,7 @@ class Request {
 	size_t		_body_size;
 	std::string	_multipart_boundary;
 
-	#ifndef WEBSERV_BENCHMARK
+	#ifdef WEBSERV_SESSION
 	Cookies _cookies;
 	#endif
 
@@ -131,10 +131,13 @@ class Request {
 		return "";
 	}
 
-	#ifndef WEBSERV_BENCHMARK
+	#ifdef WEBSERV_SESSION
 	const Cookies &get_cookies() const {
 		return _cookies;
 	}
+	#endif
+
+	#ifdef WEBSERV_SESSION
 	void	add_cookie(const std::string &key, const std::string &value) {
 		_cookies[key] = value;
 		HeadersObject::iterator it = _headers.find("cookies");
@@ -257,7 +260,7 @@ class Request {
 				_strtolower(&header_value);
 			_trim(&header_value);
 			(*bucket)[header_name] = header_value;
-			#ifndef WEBSERV_BENCHMARK
+			#ifdef WEBSERV_SESSION
 			if (header_name == "cookie")
 				_extract_cookies(header_value);
 			#endif
@@ -272,7 +275,7 @@ class Request {
 		return true;
 	}
 
-	#ifndef WEBSERV_BENCHMARK
+	#ifdef WEBSERV_SESSION
 	void	_extract_cookies(std::string data) {
 		try {
 			while (data.find(";")) {

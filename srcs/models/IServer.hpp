@@ -11,7 +11,10 @@
 #include <memory>
 #include <utility>
 
+#ifdef WEBSERV_SESSION
 #include "http/session.hpp"
+#endif
+
 #include "models/IBlock.hpp"
 #include "models/ILocation.hpp"
 
@@ -24,14 +27,20 @@ class IServer : public Webserv::Models::IBlock {
 
 	typedef std::map<std::string, ILocation *>	LocationObject;
 	typedef std::map<std::string, IServer *>	VHostsObject;
+
+	#ifdef WEBSERV_SESSION
 	typedef std::map<std::string, Session *>  	Sessions;
+	#endif
 
  protected:
 	const std::string _host;
 
 	LocationObject	_locations;
 	VHostsObject	_vhosts;
+
+	#ifdef WEBSERV_SESSION
 	Sessions	_sessions;
+	#endif
 
  public:
 	IServer()
@@ -97,7 +106,7 @@ class IServer : public Webserv::Models::IBlock {
 		for (; vhost_it != _vhosts.end(); vhost_it++)
 			delete vhost_it->second;
 
-		#ifndef WEBSERV_BENCHMARK
+		#ifdef WEBSERV_SESSION
 		destroy_sessions();
 		#endif
 	}
@@ -197,12 +206,15 @@ class IServer : public Webserv::Models::IBlock {
 	}
 
 	// Cookies / Sessions
+	#ifdef WEBSERV_SESSION
 	void	destroy_sessions() {
 		Sessions::iterator it = _sessions.begin();
 		for (; it != _sessions.end(); it++)
 			delete it->second;
 	}
+	#endif
 
+	#ifdef WEBSERV_SESSION
 	void	collect_sessions() {
 		time_t now = time(0);
 		Sessions::iterator it = _sessions.begin();
@@ -214,7 +226,9 @@ class IServer : public Webserv::Models::IBlock {
 			}
 		}
 	}
+	#endif
 
+	#ifdef WEBSERV_SESSION
 	Session *add_session(const std::string &sid) {
 		Session *session = new Session(sid);
 		std::pair<Sessions::iterator, bool> ret =
@@ -223,7 +237,9 @@ class IServer : public Webserv::Models::IBlock {
 			return session;
 		return 0;
 	}
+	#endif
 
+	#ifdef WEBSERV_SESSION
 	void	del_session(const std::string &sid) {
 		Sessions::iterator it = _sessions.find(sid);
 		if (it != _sessions.end()) {
@@ -231,13 +247,16 @@ class IServer : public Webserv::Models::IBlock {
 			_sessions.erase(it);
 		}
 	}
+	#endif
 
+	#ifdef WEBSERV_SESSION
 	Session	*get_session(const std::string &sid) {
 		Sessions::iterator it = _sessions.find(sid);
 		if (it != _sessions.end())
 			return it->second;
 		return 0;
 	}
+	#endif
 
 	// Other
 	IServer *clone() const {

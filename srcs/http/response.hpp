@@ -23,7 +23,8 @@ namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
 	typedef std::map<std::string, std::string>		Headers;
-	#ifndef WEBSERV_BENCHMARK
+
+	#ifdef WEBSERV_SESSION
 	typedef std::multimap<std::string, std::string>	Cookies;
 	#endif
 
@@ -32,7 +33,7 @@ class Response {
 	std::string _payload;
 
 	Headers _headers;
-	#ifndef WEBSERV_BENCHMARK
+	#ifdef WEBSERV_SESSION
 	Cookies _cookies_to_set;
 	#endif
 
@@ -76,17 +77,17 @@ class Response {
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
 	void	add_header(const std::string &key, const std::string &value) {
-		#ifdef WEBSERV_BENCHMARK
-		_headers[key] = value;
-		#else
+		#ifdef WEBSERV_SESSION
 		if (key.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
 			_cookies_to_set.insert(
 				std::pair<std::string, std::string>(key, value));
 		else
 			_headers[key] = value;
+		#else
+			_headers[key] = value;
 		#endif
 	}
-	#ifndef WEBSERV_BENCHMARK
+	#ifdef WEBSERV_SESSION
 	Cookies	*get_cookies_set() {
 		return &_cookies_to_set;
 	}
@@ -275,7 +276,7 @@ class Response {
 		for (; hit != _headers.end(); ++hit)
 			headers += hit->first + ": " + hit->second + "\r\n";
 
-		#ifndef WEBSERV_BENCHMARK
+		#ifdef WEBSERV_SESSION
 		Cookies::const_iterator cit = _cookies_to_set.begin();
 		for (; cit != _cookies_to_set.end(); ++cit)
 			headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";

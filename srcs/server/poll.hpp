@@ -98,8 +98,8 @@ class Poll {
 
  private:
 	void	_garbage_collector(int *evs) {
-		#ifndef WEBSERV_BENCHMARK
-			_collect_expired_sessions();
+		#ifdef WEBSERV_SESSION
+		_collect_expired_sessions();
 		#endif
 		_handle_expired_clients();
 		*evs = 0;
@@ -251,11 +251,13 @@ class Poll {
 		}
 	}
 
+	#ifdef WEBSERV_SESSION
 	void	_collect_expired_sessions() const {
 		InstanceObject::const_iterator it = _instances.begin();
 		for (; it != _instances.end(); it++)
 			it->second->collect_sessions();
 	}
+	#endif
 
 	void	_delete_client(int ev_fd, HTTP::Client *client) {
 		epoll_ctl(epoll_fd, EPOLL_CTL_DEL, ev_fd, NULL);

@@ -2,6 +2,7 @@
 #define HTTP_SESSION_HPP_
 
 #include <map>
+#include <ctime>
 #include <string>
 
 #include "consts.hpp"
@@ -26,26 +27,9 @@ class Session {
 		return ttime > _expire;
 	}
 
-	// void	refresh(time_t time) {
-	// 	_expire = time(NULL) + WEBSERV_SESSION_TIMEOUT;
-	// }
+	void	refresh() {
+		_expire = time(NULL) + WEBSERV_SESSION_TIMEOUT;
+	}
 };
 
 #endif  // HTTP_SESSION_HPP_
-
-/*
-	On Prepare Request:
-		if Client has sid
-			do Nothing
-		if Client has no sid
-			grep sid from cookies
-			if found
-				merge cookies
-			it not found
-				generate one
-
-	On Send Request:
-		grep each Set-Cookies:
-			if Match PREFIX
-				store in cookie_jar
-*/
