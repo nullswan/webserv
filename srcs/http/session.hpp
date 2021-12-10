@@ -24,7 +24,11 @@ class Session {
 		_expire(time(NULL) + WEBSERV_SESSION_TIMEOUT) {}
 
 	bool	alive(time_t ttime) {
-		return ttime > _expire;
+		return _expire > ttime;
+	}
+
+	bool	alive() {
+		return _expire > time(NULL);
 	}
 
 	void	refresh() {

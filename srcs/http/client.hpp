@@ -120,17 +120,17 @@ class Client {
  private:
 	#ifdef WEBSERV_SESSION
 	void	_start_session() {
-		if (req->get_cookies().find(WEBSERV_SESSION_ID) == req->get_cookies().end())
-			_sid = "";
+		const Cookies	&rcks = req->get_cookies();
+		const Cookies::const_iterator rit = rcks.find(WEBSERV_SESSION_ID);
+		if (_sid != "" && rit != req->get_cookies().end() && rit->second == _sid) {
+			const Session *sess = _master->get_session(_sid);
+			if (sess && sess->alive())
+				return;
+		}
 
-		if (_sid != "")
-			return;
-
-		const Cookies	&req_cookies = req->get_cookies();
-		Cookies::const_iterator it = req_cookies.find(WEBSERV_SESSION_ID);
-		if (it != req_cookies.end()) {
-			Session *sess = _master->get_session(it->second);
-			if (sess) {
+		if (rit != rcks.end()) {
+			const Session *sess = _master->get_session(rit->second);
+			if (sess && sess->alive()) {
 				Cookies::const_iterator sit = sess->cookies.begin();
 				for (; sit != sess->cookies.end(); ++sit) {
 					req->add_cookie(sit->first, sit->second);
