@@ -174,8 +174,12 @@ class Client {
 
 		Cookies::const_iterator it = resp->get_cookies_set()->begin();
 		for (; it != resp->get_cookies_set()->end(); ++it) {
-			if (it->first.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
-				sess->cookies[it->first] = it->second;
+			if (it->first.find(WEBSERV_SESSION_PREFIX) != std::string::npos) {
+				if (it->second.find(";"))
+					sess->cookies[it->first] = it->second.substr(0, it->second.find(";"));
+				else
+					sess->cookies[it->first] = it->second;
+			}
 		}
 	}
 	#endif
