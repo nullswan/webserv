@@ -120,6 +120,9 @@ class Client {
  private:
 	#ifndef WEBSERV_BENCHMARK
 	void	_start_session() {
+		if (req->get_cookies().find(WEBSERV_SESSION_ID) == req->get_cookies().end())
+			_sid = "";
+
 		if (_sid != "")
 			return;
 
@@ -149,12 +152,21 @@ class Client {
 		if (_sid != "")
 			return;
 
-		// Cookies::const_iterator it = resp->
-		// read Set-Cookies
-		// if WEBSERV_SESSION_ID != _sid
-		// 	reset and close current session
-		// if WEBSERV_PREFIX
-		// 	if not in cookie jar, add to cookie jar
+		Session *sess = _master->get_session(_sid);
+		if (!sess)
+			return;
+
+		Cookies::iterator id = resp->get_cookies_set()->find(WEBSERV_SESSION_ID);
+		if (id != resp->get_cookies_set()->end() && id->second != _sid) {
+			_sid = id->second;
+			return _save_session();
+		}
+
+		Cookies::const_iterator it = resp->get_cookies_set()->begin();
+		for (; it != resp->get_cookies_set()->end(); ++it) {
+			if (it->first.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
+				sess->cookies[it->first] = it->second;
+		}
 	}
 	#endif
 

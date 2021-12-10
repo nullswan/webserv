@@ -79,13 +79,18 @@ class Response {
 		#ifdef WEBSERV_BENCHMARK
 		_headers[key] = value;
 		#else
-		if (key == "Set-Cookie")
+		if (key.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
 			_cookies_to_set.insert(
 				std::pair<std::string, std::string>(key, value));
 		else
 			_headers[key] = value;
 		#endif
 	}
+	#ifndef WEBSERV_BENCHMARK
+	Cookies	*get_cookies_set() {
+		return &_cookies_to_set;
+	}
+	#endif
 
  private:
 	void	GET(const Models::IBlock *block) {

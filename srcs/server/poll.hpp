@@ -81,30 +81,28 @@ class Poll {
 				}
 				if (events[i].events & EPOLLIN) {
 					std::map<int, Instance *>::iterator it = _instances.find(ev_fd);
-					if (it != _instances.end()) {
+					if (it != _instances.end())
 						_handle_connection(it->second, ev_fd);
-					} else {
+					else
 						_handle_read(ev_fd);
-					}
 				} else if (events[i].events & EPOLLOUT) {
 					_handle_write(ev_fd);
 				}
 			}
-			if (nfds == 0 || evs > 500) {
-				_garbage_collector();
-				evs = 0;
-			}
+			if (nfds == 0 || evs > 500)
+				_garbage_collector(&evs);
 		}
 
 		return 0;
 	}
 
  private:
-	void	_garbage_collector() {
+	void	_garbage_collector(int *evs) {
 		#ifndef WEBSERV_BENCHMARK
 			_collect_expired_sessions();
 		#endif
 		_handle_expired_clients();
+		*evs = 0;
 	}
 
 	bool	_create_poll() {

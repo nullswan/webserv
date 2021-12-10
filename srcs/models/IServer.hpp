@@ -210,7 +210,7 @@ class IServer : public Webserv::Models::IBlock {
 			if (!it->second->alive(now)) {
 				delete it->second;
 				_sessions.erase(it);
-				it = _sessions.begin();
+				return collect_sessions();
 			}
 		}
 	}
