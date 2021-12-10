@@ -23,11 +23,11 @@ class Session {
 	:	_id(id),
 		_expire(time(NULL) + WEBSERV_SESSION_TIMEOUT) {}
 
-	bool	alive(time_t ttime) {
+	bool	alive(time_t ttime) const {
 		return _expire > ttime;
 	}
 
-	bool	alive() {
+	bool	alive() const {
 		return _expire > time(NULL);
 	}
 
