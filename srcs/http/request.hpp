@@ -34,7 +34,6 @@ class Request {
 	std::string _http_version;
 
 	HeadersObject	_headers;
-	FormObject		_form;
 
 	FORM		_post_form;
 	size_t		_body_size;
@@ -57,7 +56,7 @@ class Request {
 		_method(METH_UNKNOWN),
 		_host(""), _uri(""),
 		 _http_version(""),
-		_headers(), _form(),
+		_headers(),
 		_post_form(FORM_UNKNOWN),
 		_body_size(0),
 		_multipart_boundary(""),
@@ -97,8 +96,6 @@ class Request {
 		}
 		if (_raw_request.size() < _body_size) 
 			return false;
-		if (_post_form == FORM_MULTIPART)
-			_extract_multipart();
 		_body_ready = true;
 		__repr__();
 		return true;
@@ -167,13 +164,6 @@ class Request {
 
 		if (_method == METH_POST) {
 			std::cout << "\t}," << std::endl;
-			std::cout << "\tform: {" << std::endl;
-			FormObject::iterator it2;
-			for (it2 = _form.begin(); it2 != _form.end(); it2++) {
-				std::cout << "\t\t" << it2->first << ": "
-					<< it2->second << ", " << std::endl;
-			}
-			std::cout << "\t}" << std::endl;
 			std::cout << "\tbody: {" << std::endl;
 			std::cout << _raw_request << std::endl;
 		}
@@ -354,9 +344,8 @@ class Request {
 			_chunked = true;
 		} else {
 			it = _headers.find("content-length");
-			if (it == _headers.end() || it->second == "") {
+			if (it == _headers.end() || it->second == "")
 				return _invalid_request(BAD_REQUEST);
-			}
 			_body_size = static_cast<size_t>(strtol(it->second.c_str(), NULL, 10));
 			if (_body_size > 10000000)
 				return _invalid_request(REQUEST_ENTITY_TOO_LARGE);
@@ -370,9 +359,9 @@ class Request {
 		} else if (it->second.find("multipart/form-data") == 0) {
 			_post_form = FORM_MULTIPART;
 			size_t boundary_start = it->second.find("boundary");
-			if (boundary_start == std::string::npos) {
+			if (boundary_start == std::string::npos)
 				return _invalid_request(BAD_REQUEST);
-			}
+
 			boundary_start += 9;
 			const size_t boundary_size = it->second.substr(boundary_start).find(" ");
 			_multipart_boundary = "--" + \
