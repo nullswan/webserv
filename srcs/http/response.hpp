@@ -14,8 +14,8 @@
 
 #include "http/codes.hpp"
 #include "http/request.hpp"
-#include "models/IServer.hpp"
 #include "server/cgi.hpp"
+#include "models/IServer.hpp"
 #include "server/autoindex.hpp"
 
 namespace Webserv {
@@ -23,38 +23,32 @@ namespace HTTP {
 class Response {
 	typedef Webserv::Models::IServer 				IServer;
 	typedef std::map<std::string, std::string>		Headers;
+	typedef std::pair<std::string, std::string>		SetCookiePair;
 
-	#ifdef WEBSERV_SESSION
 	typedef std::multimap<std::string, std::string>	Cookies;
-	#endif
 
  private:
 	std::string _body;
 	std::string _payload;
 
 	Headers _headers;
-	#ifdef WEBSERV_SESSION
 	Cookies _cookies_to_set;
-	#endif
 
 	int _status;
 
-	Request *_req;
-	IServer	*_master;
-	Server::CGI 	*_cgi;
+	Request 	*_req;
+	IServer		*_master;
 
  public:
 	explicit Response(Request *request)
 	:	_status(request->get_code()),
 		_req(request),
-		_master(0),
-		_cgi(0) {}
+		_master(0) {}
 
 	explicit Response(int code)
 	:	_status(code),
 		_req(0),
-		_master(0),
-		_cgi(0) {}
+		_master(0) {}
 
 	bool	prepare(IServer *master) {
 		_master = master;
@@ -77,15 +71,10 @@ class Response {
 	const void *toString() const { return _payload.c_str(); }
 	size_t	size() const { return _payload.size(); }
 	void	add_header(const std::string &key, const std::string &value) {
-		#ifdef WEBSERV_SESSION
-		if (key.find(WEBSERV_SESSION_PREFIX) != std::string::npos)
-			_cookies_to_set.insert(
-				std::pair<std::string, std::string>(key, value));
+		if (value.find(WEBSERV_COOKIE_PREFIX) != std::string::npos)
+			_cookies_to_set.insert(SetCookiePair(key, value));
 		else
 			_headers[key] = value;
-		#else
-			_headers[key] = value;
-		#endif
 	}
 	#ifdef WEBSERV_SESSION
 	Cookies	*get_cookies_set() {
@@ -123,11 +112,20 @@ class Response {
 
 	bool	_cgi_pass(const Models::IBlock *block) {
 		std::string cgi_path = block->get_cgi(_req->get_uri());
-		if (cgi_path != "") {
-			std::cout << "run cgi" << std::endl;
-			_cgi = 0;
+		if (cgi_path == "")
+			return false;
+		Server::CGI cgi = Server::CGI(cgi_path,
+			block->get_root() + _req->get_uri(), _req->get_query(),
+			_req->get_method());
+		if (!cgi.setup(_req->get_raw_request(), _req->get_headers()) || !cgi.run()) {
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
+			return false;
 		}
-		return false;
+		_body = cgi.get_output();
+		for (Server::CGI::Headers::const_iterator it = cgi.get_headers().begin();
+			it != cgi.get_headers().end(); ++it)
+			add_header(it->first, it->second);
+		return true;
 	}
 
 	bool _dump_files_dir(const std::string &path,
@@ -136,11 +134,11 @@ class Response {
 
 		DIR	*dirptr = opendir(path.c_str());
 		if (!dirptr) {
-			set_status(500);
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
 			if (errno == EACCES || errno == EPERM)
-				set_status(403);
+				set_status(HTTP::FORBIDDEN);
 			if (errno == ENOENT)
-				set_status(404);
+				set_status(HTTP::NOT_FOUND);
 			return false;
 		}
 
@@ -259,7 +257,10 @@ class Response {
 	}
 
 	std::string _prepare_headers() {
-		_headers["Connection"] = "keep-alive";
+		if (!_req || (_req &&_req->closed()))
+			_headers["Connection"] = "closed";
+		else
+			_headers["Connection"] = "keep-alive";
 		_headers["Content-Type"] = "text/html; charset=utf-8";
 		_headers["Content-Length"] = _toString(_body.size());
 		_set_header_date();
@@ -276,11 +277,13 @@ class Response {
 		for (; hit != _headers.end(); ++hit)
 			headers += hit->first + ": " + hit->second + "\r\n";
 
-		#ifdef WEBSERV_SESSION
 		Cookies::const_iterator cit = _cookies_to_set.begin();
-		for (; cit != _cookies_to_set.end(); ++cit)
-			headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
-		#endif
+		for (; cit != _cookies_to_set.end(); ++cit) {
+			if (cit->first == "Set-Cookie")
+				headers += cit->first  + ": " + cit->second + "\r\n";
+			else
+				headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
+		}
 		return head.str() + headers + "\r\n";
 	}
 

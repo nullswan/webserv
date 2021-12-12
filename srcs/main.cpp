@@ -5,7 +5,10 @@
 
 int	main(int ac, char **av) {
 	#ifdef WEBSERV_BENCHMARK
-		std::cout << "[🚀] starting in benchmark mode " << std::endl;
+		std::cout << "[🚀] starting in benchmark mode" << std::endl;
+	#endif
+	#ifdef WEBSERV_SESSION
+		std::cout << "[🔑] using session module" << std::endl;
 	#endif
 
 	Webserv::Conf::Parser	parser;

@@ -14,6 +14,7 @@
 namespace Webserv {
 namespace HTTP {
 class Request {
+ public:
 	typedef std::map<std::string, std::string> HeadersObject;
 	typedef std::map<std::string, std::string> FormObject;
 
@@ -29,6 +30,7 @@ class Request {
 	METHODS		_method;
 	std::string _host;
 	std::string	_uri;
+	std::string _query;
 	std::string _http_version;
 
 	HeadersObject	_headers;
@@ -125,8 +127,12 @@ class Request {
 	const std::string get_raw_request() const { return _raw_request; }
 	METHODS		get_method() const { return _method; }
 	const std::string get_uri() const { return _uri; }
+	const std::string get_query() const { return _query; }
 	const std::string get_host() const { return _host; }
 	bool		get_header_status() const { return _headers_ready; }
+	const HeadersObject &get_headers() {
+		return _headers;
+	}
 	const std::string get_header_value(const std::string &headerName) const {
 		HeadersObject::const_iterator it = _headers.find(headerName);
 		if (it != _headers.end())
@@ -147,7 +153,7 @@ class Request {
 		if (it == _headers.end())
 			_headers["cookies"] = key + "=" + value;
 		else
-			_headers["cookies"] += ";" + key + "=" + value;
+			_headers["cookies"] += "; " + key + "=" + value;
 	}
 	#endif
 
@@ -228,6 +234,10 @@ class Request {
 		if (_uri == "" || _uri.find("/") != 0)
 			return _invalid_request(BAD_REQUEST);
 		_raw_request.erase(0, uri_separator_pos + 1);
+		if (_uri.find("?") != std::string::npos) {
+			_query = _uri.substr(_uri.find("?") + 1);
+			_uri.erase(_uri.find("?"));
+		}
 		return true;
 	}
 
