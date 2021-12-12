@@ -90,20 +90,15 @@ class Request {
 
 	bool	read_body() {
 		if (_chunked == true) {
-			if (_read_chunks() == READ_WAIT) {
+			if (_read_chunks() == READ_WAIT)
 				return false;
-			}
 			_body_size = _raw_request.size();
 			_chunked = false;
 		}
-		if (_raw_request.size() < _body_size) {
+		if (_raw_request.size() < _body_size) 
 			return false;
-		}
-		if (_post_form == FORM_URLENCODED) {
-			_extract_urlencoded();
-		} else if (_post_form == FORM_MULTIPART) {
+		if (_post_form == FORM_MULTIPART)
 			_extract_multipart();
-		}
 		_body_ready = true;
 		__repr__();
 		return true;
@@ -304,25 +299,6 @@ class Request {
 		}
 	}
 	#endif
-
-	void	_extract_urlencoded() {
-		return ;
-		// size_t form_separator_pos;
-		// do {
-			// std::cout << _raw_request << std::endl;
-			// form_separator_pos = _raw_request.find("&");
-			// const std::string form_field = _raw_request.substr(0, form_separator_pos);
-			// const size_t form_field_separator_pos = form_field.find("=");
-			// if (form_field_separator_pos == std::string::npos) {
-				// break;
-			// }
-			// const std::string form_name = form_field.substr(0, form_field_separator_pos);
-			// const std::string form_value = form_field.substr(
-					// form_field_separator_pos + 1);
-			// _form[form_name] = form_value;
-			// _raw_request.erase(0, form_separator_pos + 1);
-		// } while (form_separator_pos != std::string::npos);
-	}
 
 	void	_extract_multipart() {
 		size_t boundary = _raw_request.find(_multipart_boundary + "\r\n");
