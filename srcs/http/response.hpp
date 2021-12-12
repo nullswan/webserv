@@ -257,7 +257,7 @@ class Response {
 	}
 
 	std::string _prepare_headers() {
-		if (_req->closed())
+		if (!_req || (_req &&_req->closed()))
 			_headers["Connection"] = "closed";
 		else
 			_headers["Connection"] = "keep-alive";
@@ -280,7 +280,7 @@ class Response {
 		Cookies::const_iterator cit = _cookies_to_set.begin();
 		for (; cit != _cookies_to_set.end(); ++cit) {
 			if (cit->first == "Set-Cookie")
-				headers += cit->first  + "=" + cit->second + "\r\n";
+				headers += cit->first  + ": " + cit->second + "\r\n";
 			else
 				headers += "Set-Cookie: " + cit->first + "=" + cit->second + "\r\n";
 		}
