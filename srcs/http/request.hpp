@@ -153,7 +153,7 @@ class Request {
 		if (it == _headers.end())
 			_headers["cookies"] = key + "=" + value;
 		else
-			_headers["cookies"] += ";" + key + "=" + value;
+			_headers["cookies"] += "; " + key + "=" + value;
 	}
 	#endif
 
