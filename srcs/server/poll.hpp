@@ -40,6 +40,12 @@ class Poll {
  public:
 	Poll()
 	:	_alive(true), epoll_fd(-1) {
+		#ifdef WEBSERV_BENCHMARK
+		std::cout << "[🚀] starting in benchmark mode" << std::endl;
+		#endif
+		#ifdef WEBSERV_SESSION
+		std::cout << "[🔑] using session module" << std::endl;
+		#endif
 		HTTP::init_status_map();
 	}
 
