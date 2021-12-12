@@ -38,13 +38,16 @@ School 42 Project - Build HTTP/1.1 resilient server.
 
 ## Sessions
 ```
-make SESSION=enable
+// Enabled by default
+
+make SESSION=disable
 ```
 
 ## Optimizations
 
 ```
 make MODE=benchmark
+make MODE=benchmark SESSION=disable
 ```
 ## Running Tests
 

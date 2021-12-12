@@ -74,8 +74,6 @@ class CGI {
 			_env["HTTP_" + _header_to_hcgi(it->first)] = it->second;
 
 		_env["GATEWAY_INTERFACE"] = "CGI/1.1";
-		// _env["CONTENT_TYPE"] = "";
-		// _env["PATH_TRANSLATED"] = "";
 		_env["SCRIPT_FILENAME"] = _file_path;
 		if (_method == HTTP::METH_GET)
 			_env["REQUEST_METHOD"] = "GET";
