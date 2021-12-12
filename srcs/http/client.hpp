@@ -234,7 +234,11 @@ class Client {
 		<< get_method() << " " << get_uri() << " |"
 		<< get_http_code() << "| "
 		<< get_time_diff(&_end) << " | "
-		<< get_client_ip() << " -> " << get_master_ip() << std::endl;
+		<< get_client_ip() << " -> " << get_master_ip()
+		#ifdef WEBSERV_SESSION
+		<< " | " << _sid
+		#endif
+		<< std::endl;
 	}
 
 	void	_resolve_client_ip() {
