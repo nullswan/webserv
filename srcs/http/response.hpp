@@ -256,6 +256,8 @@ class Response {
 		if (_handle_upload(block, path))
 			return (set_status(HTTP::NO_CONTENT));
 		set_status(HTTP::METHOD_NOT_ALLOWED);
+	}
+
 	bool	_handle_upload(const Models::IBlock *block, const std::string &path) {
 		if (block->get_upload_pass() == "")
 			return false;
