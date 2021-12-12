@@ -1,9 +1,5 @@
 <?php
 
-setcookie("WEBSERV_SESSION_TEST", "1");
-setcookie("WEBSERV_SESSION_TEST_2", "2");
-setcookie("WEBSERV_SESSION_TEST_3", "3");
-
 if (isset($_COOKIE["WEBSERV_SESSION_ID"])) {
 	echo "Session id: " . $_COOKIE["WEBSERV_SESSION_ID"] . "<br>";
 } else {
@@ -18,3 +14,13 @@ if (isset($_GET['WEBSERV_USER'])) {
 }
 
 ?>
+
+<html>
+<head></head>
+<body>
+<h1>Webserv User</h1>
+<form action="webserv_session.php" method="get">
+	<input type="text" name="WEBSERV_USER">
+	<input type="submit">
+</body>
+</html>
