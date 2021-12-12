@@ -257,7 +257,10 @@ class Response {
 	}
 
 	std::string _prepare_headers() {
-		_headers["Connection"] = "keep-alive";
+		if (_req->closed())
+			_headers["Connection"] = "closed";
+		else
+			_headers["Connection"] = "keep-alive";
 		_headers["Content-Type"] = "text/html; charset=utf-8";
 		_headers["Content-Length"] = _toString(_body.size());
 		_set_header_date();
