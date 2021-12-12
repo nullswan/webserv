@@ -84,7 +84,7 @@ class Response {
 
  private:
 	void	GET(const Models::IBlock *block) {
-		std::string path = _build_method_path(block, METH_GET, false);
+		const std::string path = _build_method_path(block, METH_GET, false);
 		if (path == "")
 			return;
 
@@ -119,7 +119,7 @@ class Response {
 			_req->get_method());
 		if (!cgi.setup(_req->get_raw_request(), _req->get_headers()) || !cgi.run()) {
 			set_status(HTTP::INTERNAL_SERVER_ERROR);
-			return false;
+			return true;
 		}
 		_body = cgi.get_output();
 		for (Server::CGI::Headers::const_iterator it = cgi.get_headers().begin();
@@ -227,7 +227,7 @@ class Response {
 	}
 
 	void	DELETE(const Models::IBlock *block) {
-		std::string path = _build_method_path(block, METH_DELETE, true);
+		const std::string path = _build_method_path(block, METH_DELETE, true);
 		if (path == "")
 			return;
 
@@ -243,13 +243,27 @@ class Response {
 		set_status(204);
 	}
 
+	void	POST(const Models::IBlock *block) {
+		const std::string path = _build_method_path(block, METH_POST, true);
+		if (path == "")
+			return;
+
+		if (_cgi_pass(block))
+			return ;
+		
+		// handle upload
+
+		set_status(HTTP::METHOD_NOT_ALLOWED);
+	}
+
 	void	invoke() {
 		const Models::IBlock *block = _master->get_block_using_vhosts(
 			_req->get_host(), _req->get_uri());
 
 		if (_req->get_method() == METH_GET)
 			GET(block);
-		// else if (_req->get_method() == METH_POST)
+		else if (_req->get_method() == METH_POST)
+			POST(block);
 		else if (_req->get_method() == METH_DELETE)
 			DELETE(block);
 		else
