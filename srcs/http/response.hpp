@@ -248,6 +248,8 @@ class Response {
 		if (path == "")
 			return;
 
+		if (block->get_body_limit() < _req->get_raw_request().size())
+			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
 		if (_cgi_pass(block))
 			return ;
 		
