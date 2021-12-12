@@ -252,7 +252,6 @@ class Response {
 			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
 		if (_cgi_pass(block))
 			return ;
-		
 		if (_handle_upload(block, path))
 			return (set_status(HTTP::NO_CONTENT));
 		set_status(HTTP::METHOD_NOT_ALLOWED);
