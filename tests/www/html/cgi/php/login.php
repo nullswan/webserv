@@ -8,5 +8,6 @@
 		echo 'Logged-in as ' . $_SESSION['user'];
 	} else {
 		echo 'Please enter your login and password.';
+		echo 'Ex: login.php?user=xx&pwd=yy';
 	}
 ?>
