@@ -253,9 +253,38 @@ class Response {
 		if (_cgi_pass(block))
 			return ;
 		
-		// handle upload
-
+		if (_handle_upload(block, path))
+			return (set_status(HTTP::NO_CONTENT));
 		set_status(HTTP::METHOD_NOT_ALLOWED);
+	bool	_handle_upload(const Models::IBlock *block, const std::string &path) {
+		if (block->get_upload_pass() == "")
+			return false;
+		const std::string content_type = _req->get_header_value("content-type");
+		if (content_type != "") {
+			if (content_type == "multipart/form-data")
+				return _handle_upload_multipart(block, path);
+			else if (content_type == "application/x-www-form-urlencoded")
+				return false;
+		}
+		return _create_file(path, _req->get_raw_request());
+	}
+
+	bool	_handle_upload_multipart(const Models::IBlock *block, const std::string &path) {
+		(void)block;
+		(void)path;
+		return true;
+	}
+
+	bool		_create_file(const std::string &path, const std::string &content) {
+		int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND | O_NONBLOCK, 0);
+		if (fd == -1)
+		{
+			set_status(500);
+			return true;
+		}
+		write(fd, content.c_str(), content.size());
+		close(fd);
+		return true;
 	}
 
 	void	invoke() {
