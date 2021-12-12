@@ -96,7 +96,6 @@ class Request {
 		if (_raw_request.size() < _body_size) 
 			return false;
 		_body_ready = true;
-		__repr__();
 		return true;
 	}
 
@@ -147,28 +146,6 @@ class Request {
 			_headers["cookies"] += "; " + key + "=" + value;
 	}
 	#endif
-
-	void	__repr__() {
-		std::cout << "Request{" << std::endl;
-		std::cout << "\tmethod: " << stringify_method(_method)
-			<< ", " << std::endl;
-		std::cout << "\turi: " << _uri << ", " << std::endl;
-		std::cout << "\thttp_version: " << _http_version << ", " << std::endl;
-		std::cout << "\theaders: {" << std::endl;
-
-		HeadersObject::iterator it;
-		for (it = _headers.begin(); it != _headers.end(); it++) {
-			std::cout << "\t\t" << it->first << ": " << it->second << ", " << std::endl;
-		}
-
-		if (_method == METH_POST) {
-			std::cout << "\t}," << std::endl;
-			std::cout << "\tbody: {" << std::endl;
-			std::cout << _raw_request << std::endl;
-		}
-		std::cout << "\t}" << std::endl;
-		std::cout << "}" << std::endl;
-	}
 
  private:
 	READ	_read_chunks() {
