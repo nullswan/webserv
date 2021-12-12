@@ -53,13 +53,13 @@ class CGI {
 		_delete_temp_file();
 	}
 
-	bool	setup(const std::string &request_data,
+	bool	setup(const std::string &request,
 		const HTTP::Request::HeadersObject &headers) {
 		if (pipe(_fds) == -1)
 			return false;
 
-		write(_fds[1], request_data.c_str(), request_data.size());
-		_env["CONTENT_LENGTH"] = request_data.size();
+		write(_fds[1], request.c_str(), request.size());
+		_env["CONTENT_LENGTH"] = _toString(request.size());
 
 		_out_fd = open(_out_file.c_str(), O_RDWR | O_CREAT, S_IWRITE | S_IREAD);
 		if (_out_fd == -1)
@@ -70,18 +70,20 @@ class CGI {
 
 	bool	setup_env(const HTTP::Request::HeadersObject &headers) {
 		HTTP::Request::HeadersObject::const_iterator it = headers.begin();
-		for (; it != headers.end(); ++it) {
-			_env["HTTP_" + _to_upper(it->first)] = it->second;
-		}
+		for (; it != headers.end(); ++it)
+			_env["HTTP_" + _header_to_hcgi(it->first)] = it->second;
 
 		_env["GATEWAY_INTERFACE"] = "CGI/1.1";
 		// _env["CONTENT_TYPE"] = "";
 		// _env["PATH_TRANSLATED"] = "";
-		// _env["REQUEST_METHOD"] = "";
-		// _env["SCRIPT_NAME"] = "";
+		_env["SCRIPT_FILENAME"] = _file_path;
+		if (_method == HTTP::METH_GET)
+			_env["REQUEST_METHOD"] = "GET";
+		else if (_method == HTTP::METH_POST)
+			_env["REQUEST_METHOD"] = "POST";
+		else
+			_env["REQUEST_METHOD"] = "UNKNOWN";
 		_env["REDIRECT_STATUS"] = "200";
-		(void)_method;
-		// headers startswith HTTP
 		return true;
 	}
 
@@ -145,10 +147,12 @@ class CGI {
 		return _parse_headers(data);
 	}
 
-	static inline std::string _to_upper(std::string in) {
+	static inline std::string _header_to_hcgi(std::string in) {
 		for (std::size_t i = 0; i < in.size(); i++) {
-			if (i >= 'a' || i <= 'A')
-				in[i] = i - 32;
+			if (in[i] >= 'a' && in[i] <= 'z')
+				in[i] = in[i] - 32;
+			else if (in[i] == '-')
+				in[i] = '_';
 		}
 		return in;
 	}
@@ -165,7 +169,7 @@ class CGI {
 			const std::string key = headers.substr(0, sep_pos);
 
 			std::size_t nl_pos = 0;
-			while (headers[nl_pos] != '\r')
+			while (headers[nl_pos] && headers[nl_pos] != '\r')
 				++nl_pos;
 			std::string value = headers.substr(sep_pos + 2, nl_pos);
 
@@ -178,6 +182,13 @@ class CGI {
 			headers = headers.substr(nl_pos + 2);
 		}
 		return true;
+	}
+
+	std::string	_toString(size_t num) {
+		std::stringstream ss;
+
+		ss << num;
+		return ss.str();
 	}
 };
 
