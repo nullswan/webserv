@@ -143,7 +143,6 @@ class CGI {
 		std::string data((std::istreambuf_iterator<char>(file)),
 			std::istreambuf_iterator<char>());
 		file.close();
-		std::cout << data << std::endl;
 		return _parse_headers(data);
 	}
 
