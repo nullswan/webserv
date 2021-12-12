@@ -178,7 +178,7 @@ class Client {
 					const std::string key = it->second.substr(0, it->second.find("="));
 					const std::string val = it->second.substr(it->second.find("=") + 1);
 					sess->cookies[key] = val;
-				}					
+				}
 			}
 		}
 	}
