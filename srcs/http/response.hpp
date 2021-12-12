@@ -251,7 +251,7 @@ class Response {
 		if (block->get_body_limit() < _req->get_raw_request().size())
 			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
 		if (_cgi_pass(block))
-			return ;
+			return;
 		if (_handle_upload(block, path))
 			return (set_status(HTTP::NO_CONTENT));
 		set_status(HTTP::METHOD_NOT_ALLOWED);
@@ -273,7 +273,8 @@ class Response {
 
 	bool	_handle_upload_multipart(const std::string &path) {
 		std::string body = _req->get_raw_request();
-		const std::string boundary = _req->get_raw_request().substr(0, _req->get_raw_request().find("\r\n"));
+		const std::string boundary = _req->get_raw_request().substr(
+				0, _req->get_raw_request().find("\r\n"));
 		while (body != "") {
 			body.erase(0, body.find("\r\n") + 2);
 			if (body == "" || body == "--")
@@ -286,7 +287,7 @@ class Response {
 
 			const std::size_t filename_pos = content_disposition.find("filename=\"");
 			const std::string filename = content_disposition.substr(
-				filename_pos + 10, 
+				filename_pos + 10,
 				content_disposition.find("\"", filename_pos + 10) - filename_pos - 10);
 
 			const std::string file_path = path + filename;
@@ -299,8 +300,7 @@ class Response {
 
 	bool		_create_file(const std::string &path, const std::string &content) {
 		int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
-		if (fd == -1)
-		{
+		if (fd == -1) {
 			set_status(500);
 			return false;
 		}

@@ -93,7 +93,7 @@ class Request {
 			_body_size = _raw_request.size();
 			_chunked = false;
 		}
-		if (_raw_request.size() < _body_size) 
+		if (_raw_request.size() < _body_size)
 			return false;
 		_body_ready = true;
 		return true;
