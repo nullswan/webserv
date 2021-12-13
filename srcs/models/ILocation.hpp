@@ -34,14 +34,12 @@ class ILocation : public Webserv::Models::IBlock {
 		const int &port,
 		const std::string &path,
 		const std::string &root,
-		const std::string &upload_pass,
 		const size_t &body_limit,
 		const std::map<int, std::string> &error_pages)
 	:	_path(path) {
 		_name = name;
 		_port = port;
 		_root = root;
-		_upload_pass = upload_pass;
 		_body_limit = body_limit;
 		_error_pages = error_pages;
 	}
