@@ -33,5 +33,7 @@
 
 # remainders
 
+*.pyc
 objs/
 webserv
+tests/logs/

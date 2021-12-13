@@ -13,6 +13,9 @@ ifeq ($(SESSION), disable)
 	ESESSION = 
 endif
 CFLAGS	:= -Wall -Wextra -Werror -std=c++98 -I $(SRCS_DIR) $(ESESSION)
+ifeq ($(TESTS), enable)
+	CFLAGS += -D WEBSERV_TESTS=1
+endif
 OFLAGS  :=  -D WEBSERV_BENCHMARK=1 -O3
 DFLAGS	= -MMD -MF $(@:.o=.d)
 SHELL	:= /bin/bash
