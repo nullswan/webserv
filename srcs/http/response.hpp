@@ -250,28 +250,31 @@ class Response {
 
 		if (block->get_body_limit() < _req->get_raw_request().size())
 			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
+
 		if (_cgi_pass(block))
 			return;
-		if (_handle_upload(block, path))
-			return (set_status(HTTP::NO_CONTENT));
-		set_status(HTTP::METHOD_NOT_ALLOWED);
+
+		_handle_upload(block, path);
+		if (_status != HTTP::CONFLICT && _status != HTTP::FORBIDDEN && _status != HTTP::NO_CONTENT)
+			set_status(HTTP::METHOD_NOT_ALLOWED);
 	}
 
-	bool	_handle_upload(const Models::IBlock *block, const std::string &path) {
-		if (block->get_upload_pass() == "")
-			return false;
+	void	_handle_upload(const Models::IBlock *block, const std::string &path) {
+		if (block->get_upload_pass() == "") {
+			set_status(HTTP::FORBIDDEN);
+			return ;
+		}
 		const std::string content_type = _req->get_header_value("content-type");
 		if (content_type != "") {
 			if (content_type.find("multipart/form-data") != std::string::npos)
 				return _handle_upload_multipart(path);
 			else if (content_type == "application/x-www-form-urlencoded")
-				return false;
+				return ;
 		}
 		_create_file(path, _req->get_raw_request());
-		return true;
 	}
 
-	bool	_handle_upload_multipart(const std::string &path) {
+	void	_handle_upload_multipart(const std::string &path) {
 		std::string body = _req->get_raw_request();
 		const std::string boundary = _req->get_raw_request().substr(
 				0, _req->get_raw_request().find("\r\n"));
@@ -291,22 +294,29 @@ class Response {
 				content_disposition.find("\"", filename_pos + 10) - filename_pos - 10);
 
 			const std::string file_path = path + filename;
-			if (!_create_file(file_path, body.substr(0, body.find("\r\n"))))
-				return true;
+			if (!_create_file(file_path, body.substr(0, body.find("\r\n")))) {
+				return ;
+			}
 			body.erase(0, body.find("\r\n") + 2);
 		}
-		return true;
+		set_status(HTTP::NO_CONTENT);
+		return ;
 	}
 
 	bool		_create_file(const std::string &path, const std::string &content) {
-		int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+		if( access( path.c_str(), F_OK ) == 0 ) {
+			set_status(HTTP::CONFLICT);
+			return false;
+		}
+		int fd = open(path.c_str(), O_WRONLY | O_CREAT, 0666);
 		if (fd == -1) {
-			set_status(500);
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
 			return false;
 		}
 		write(fd, content.c_str(), content.size());
 		close(fd);
-		usleep(100);
+		set_status(HTTP::NO_CONTENT);
+		usleep(50);
 		return true;
 	}
 
