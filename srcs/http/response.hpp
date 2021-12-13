@@ -255,21 +255,22 @@ class Response {
 			return;
 
 		_handle_upload(block, path);
-		if (_status != HTTP::CONFLICT && _status != HTTP::FORBIDDEN && _status != HTTP::NO_CONTENT)
+		if (_status != HTTP::CONFLICT && _status != HTTP::FORBIDDEN
+			&& _status != HTTP::NO_CONTENT)
 			set_status(HTTP::METHOD_NOT_ALLOWED);
 	}
 
 	void	_handle_upload(const Models::IBlock *block, const std::string &path) {
 		if (block->get_upload_pass() == "") {
 			set_status(HTTP::FORBIDDEN);
-			return ;
+			return;
 		}
 		const std::string content_type = _req->get_header_value("content-type");
 		if (content_type != "") {
 			if (content_type.find("multipart/form-data") != std::string::npos)
 				return _handle_upload_multipart(path);
 			else if (content_type == "application/x-www-form-urlencoded")
-				return ;
+				return;
 		}
 		_create_file(path, _req->get_raw_request());
 	}
@@ -295,16 +296,16 @@ class Response {
 
 			const std::string file_path = path + filename;
 			if (!_create_file(file_path, body.substr(0, body.find("\r\n")))) {
-				return ;
+				return;
 			}
 			body.erase(0, body.find("\r\n") + 2);
 		}
 		set_status(HTTP::NO_CONTENT);
-		return ;
+		return;
 	}
 
 	bool		_create_file(const std::string &path, const std::string &content) {
-		if( access( path.c_str(), F_OK ) == 0 ) {
+		if(access(path.c_str(), F_OK) == 0) {
 			set_status(HTTP::CONFLICT);
 			return false;
 		}
