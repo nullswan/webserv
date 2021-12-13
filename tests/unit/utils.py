@@ -25,7 +25,7 @@ def get_random_string(length) -> str:
 def start_server(config: str):
 	f = open(get_git_root() + '/tests/logs/stdout', 'a')
 	os.chdir(get_git_root())
-	pid = subprocess.Popen(["./webserv", config], stdout=f)
+	pid = subprocess.Popen(["./webserv", config], stdout=f, stderr=f)
 	time.sleep(.5)
 	return pid, f
 
