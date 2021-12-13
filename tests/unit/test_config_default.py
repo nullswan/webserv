@@ -178,8 +178,67 @@ class TestDefault(unittest.TestCase):
 		self.assertEqual(r.status_code, 200)
 		self.assertIn("<h3>Index of tests/www/html/uploads/</h3>", r.text)
 
-	# def test_multiple_file_1_upload(self):
-	# def test_multiple_file_2_delete(self):
+	def test_file_upload_raw(self):
+		url = "http://localhost:8000/uploads/file_1.txt"
+		payload = u.get_random_string(100000)
+		headers = {
+			'Content-Type': 'text/plain'
+		}
+
+		r = requests.get(url)
+		self.assertEqual(r.status_code, 404)
+		self.assertIn("Not Found", r.text)
+
+		r = requests.post(url, headers=headers, data=payload)
+		self.assertEqual(r.status_code, 204)
+		self.assertEqual(len(r.text), 0)
+
+		r = requests.post(url, headers=headers, data=payload)
+		self.assertEqual(r.status_code, 409)
+		self.assertIn("Conflict", r.text)
+
+		r = requests.get(url)
+		self.assertEqual(r.status_code, 200)
+		self.assertEqual(r.text, payload)
+
+		r = requests.delete(url)
+		self.assertEqual(r.status_code, 204)
+		self.assertEqual(len(r.text), 0)
+
+		r = requests.delete(url)
+		self.assertEqual(r.status_code, 404)
+		self.assertIn("Not Found", r.text)
+
+	def test_file_upload_multipart(self):
+		url = "http://localhost:8000/uploads/"
+		fpath = "10ko.file"
+
+		file = open(u.get_git_root() + '/tests/files/' + fpath,'rb')
+		files = [
+			('file_10ko', 
+				(fpath, file, 'application/octet-stream')
+			)
+		]
+
+		response = requests.request("POST", url, files=files)
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
+
+		response = requests.request("POST", url, files=files)
+		self.assertEqual(response.status_code, 409)
+		self.assertIn("Conflict", response.text)
+
+		file.close()
+
+		response = requests.get(url + fpath)
+		self.assertEqual(response.status_code, 200)
+
+		response = requests.delete(url + fpath)
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
+
+	# def test_multiple_file_upload_multipart(self):
+
 
 if __name__ == '__main__':
 	unittest.main()
