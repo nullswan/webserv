@@ -29,7 +29,7 @@ class TestDefault(unittest.TestCase):
 	def test_ping_autoindex(self):
 		r = requests.get("http://localhost:8000/ping/")
 		self.assertEqual(r.status_code, 200)
-		self.assertIn("<h3>Index of tests/www/html/ping/</h3>", r.text)
+		self.assertEqual(r.text, u.get_html_file("ping/index.html"))
 	# def test_ping_method(self):
 	# def test_redirect(self):
 
