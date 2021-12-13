@@ -36,6 +36,7 @@ class TestConfigBodyLimitServerA(unittest.TestCase):
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 200)
+		self.assertIn("tests/www/html/uploads/", response.text)
 
 	def test_1_upload_text_plain(self):
 		payload = u.get_random_string(5)
@@ -46,6 +47,7 @@ class TestConfigBodyLimitServerA(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
@@ -62,17 +64,20 @@ class TestConfigBodyLimitServerA(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 409)
+		self.assertIn("Conflict", response.text)
 
 	def test_3_delete_text_plain(self):
 		response = requests.request("DELETE", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 404)
+		self.assertIn("Not Found", response.text)
 
 	def test_upload_at_limit(self):
 		payload = u.get_random_string(10)
@@ -83,6 +88,7 @@ class TestConfigBodyLimitServerA(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url + "limit",
 			headers=self.def_headers, data=self.def_payload)
@@ -94,11 +100,13 @@ class TestConfigBodyLimitServerA(unittest.TestCase):
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url + "limit",
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 404)
+		self.assertIn("Not Found", response.text)
 
 	def test_upload_over_limit(self):
 		payload = u.get_random_string(100)
@@ -109,11 +117,13 @@ class TestConfigBodyLimitServerA(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 413)
+		self.assertIn("Payload Too Large", response.text)
 
 		response = requests.request("GET", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
 		
 		self.assertEqual(response.status_code, 404)
+		self.assertIn("Not Found", response.text)
 
 class TestConfigBodyLimitB(unittest.TestCase):
 	pid = 0
@@ -148,6 +158,7 @@ class TestConfigBodyLimitB(unittest.TestCase):
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 200)
+		self.assertIn("tests/www/html/uploads/", response.text)
 
 	def test_1_upload_text_plain_config_body_limit_b(self):
 		payload = u.get_random_string(50000)
@@ -159,6 +170,7 @@ class TestConfigBodyLimitB(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
@@ -176,17 +188,20 @@ class TestConfigBodyLimitB(unittest.TestCase):
 		response = requests.request("POST", self.file_url,
 			headers=headers, data=payload)
 		self.assertEqual(response.status_code, 409)
+		self.assertIn("Conflict", response.text)
 
 	def test_3_delete_text_plain(self):
 		response = requests.request("DELETE", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 404)
+		self.assertIn("Not Found", response.text)
 
 	def test_upload_at_limit(self):
 		payload = u.get_random_string(100000)
@@ -198,6 +213,7 @@ class TestConfigBodyLimitB(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url + "limit",
 			headers=self.def_headers, data=self.def_payload)
@@ -209,11 +225,13 @@ class TestConfigBodyLimitB(unittest.TestCase):
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 		response = requests.request("GET", self.file_url + "limit",
 			headers=self.def_headers, data=self.def_payload)
 
 		self.assertEqual(response.status_code, 404)
+		self.assertIn("Not Found", response.text)
 
 	def test_upload_over_limit(self):
 		payload = u.get_random_string(110000)
@@ -225,11 +243,13 @@ class TestConfigBodyLimitB(unittest.TestCase):
 			headers=headers, data=payload)
 
 		self.assertEqual(response.status_code, 413)
+		self.assertIn("Payload Too Large", response.text)
 
 		response = requests.request("GET", self.file_url,
 			headers=self.def_headers, data=self.def_payload)
 		
 		self.assertEqual(response.status_code, 404)
+		self.assertIn("Not Found", response.text)
 
 if __name__ == '__main__':
 	unittest.main()
