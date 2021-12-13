@@ -104,7 +104,6 @@ class CGI {
 				const_cast<char*>(_bin_path.c_str()),
 				const_cast<char*>(_file_path.c_str()),
 			NULL};
-
 			if (execve(argv[0], argv, _dump_env()) == -1)
 				exit(EXIT_FAILURE);
 		} else {
