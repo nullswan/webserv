@@ -21,6 +21,7 @@ class TestConfigErrorPage(unittest.TestCase):
 		r = requests.get("http://localhost:8000/not_found")
 		self.assertEqual(r.status_code, 404)
 		self.assertEqual(r.text, u.get_html_file("custom_error.html"))
+		self.assertNotEqual(r.text, u.get_html_file("404.html"))
 
 if __name__ == '__main__':
 	unittest.main()
