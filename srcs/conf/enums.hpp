@@ -52,6 +52,12 @@ static const char DEFAULT_CONF_FILE[] = "server {\n"
 "		cgi			.php /usr/bin/php-cgi;\n"
 "	}\n"
 "\n"
+"	location /uploads {\n"
+"		root		tests/www/html;\n"
+"		autoindex 	on;\n"
+"		upload_pass	tests/www/html;\n"
+"	}\n"
+"\n"
 "}";
 
 }  // namespace Conf

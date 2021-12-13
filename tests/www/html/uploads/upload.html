@@ -1,0 +1,25 @@
+<html>
+<body>
+<h1>Form MULTIPART/FORM-DATA</h1>
+<form action="http://localhost:8000/uploads/" method="post" enctype="multipart/form-data">
+	<div>
+		<label for="file">Select file to upload</label>
+		<input type="file" id="file" name="file" multiple>
+	</div>
+	<div>
+		<button>Send</button>
+	</div>
+</form>
+<hr />
+<h1>Form MULTIPART/FORM-DATA MUTIPLES</h1>
+	<form action="http://localhost:8000/uploads/" method="post" enctype="multipart/form-data">
+		<p><input type="file" name="file1">
+		<p><input type="file" name="file2">
+		<p><input type="file" name="file3">
+		<p><button type="submit">Submit</button>
+	</form>
+	<p>
+		<a href="http://localhost:8000/uploads/">Back to uploads</a>
+	</p>
+</body>
+</html>

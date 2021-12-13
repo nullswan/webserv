@@ -70,18 +70,22 @@ class CGI {
 
 	bool	setup_env(const HTTP::Request::HeadersObject &headers) {
 		HTTP::Request::HeadersObject::const_iterator it = headers.begin();
-		for (; it != headers.end(); ++it)
+		for (; it != headers.end(); ++it) {
+			if (it->first == "content-type")
+				_env["CONTENT_TYPE"] = it->second;
 			_env["HTTP_" + _header_to_hcgi(it->first)] = it->second;
+		}
 
 		_env["GATEWAY_INTERFACE"] = "CGI/1.1";
 		_env["SCRIPT_FILENAME"] = _file_path;
+		_env["REDIRECT_STATUS"] = "200";
+
 		if (_method == HTTP::METH_GET)
 			_env["REQUEST_METHOD"] = "GET";
 		else if (_method == HTTP::METH_POST)
 			_env["REQUEST_METHOD"] = "POST";
 		else
 			_env["REQUEST_METHOD"] = "UNKNOWN";
-		_env["REDIRECT_STATUS"] = "200";
 		return true;
 	}
 

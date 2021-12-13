@@ -84,7 +84,7 @@ class Response {
 
  private:
 	void	GET(const Models::IBlock *block) {
-		std::string path = _build_method_path(block, METH_GET, false);
+		const std::string path = _build_method_path(block, METH_GET, false);
 		if (path == "")
 			return;
 
@@ -119,7 +119,7 @@ class Response {
 			_req->get_method());
 		if (!cgi.setup(_req->get_raw_request(), _req->get_headers()) || !cgi.run()) {
 			set_status(HTTP::INTERNAL_SERVER_ERROR);
-			return false;
+			return true;
 		}
 		_body = cgi.get_output();
 		for (Server::CGI::Headers::const_iterator it = cgi.get_headers().begin();
@@ -227,7 +227,7 @@ class Response {
 	}
 
 	void	DELETE(const Models::IBlock *block) {
-		std::string path = _build_method_path(block, METH_DELETE, true);
+		const std::string path = _build_method_path(block, METH_DELETE, true);
 		if (path == "")
 			return;
 
@@ -243,13 +243,81 @@ class Response {
 		set_status(204);
 	}
 
+	void	POST(const Models::IBlock *block) {
+		const std::string path = _build_method_path(block, METH_POST, true);
+		if (path == "")
+			return;
+
+		if (block->get_body_limit() < _req->get_raw_request().size())
+			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
+		if (_cgi_pass(block))
+			return;
+		if (_handle_upload(block, path))
+			return (set_status(HTTP::NO_CONTENT));
+		set_status(HTTP::METHOD_NOT_ALLOWED);
+	}
+
+	bool	_handle_upload(const Models::IBlock *block, const std::string &path) {
+		if (block->get_upload_pass() == "")
+			return false;
+		const std::string content_type = _req->get_header_value("content-type");
+		if (content_type != "") {
+			if (content_type.find("multipart/form-data") != std::string::npos)
+				return _handle_upload_multipart(path);
+			else if (content_type == "application/x-www-form-urlencoded")
+				return false;
+		}
+		_create_file(path, _req->get_raw_request());
+		return true;
+	}
+
+	bool	_handle_upload_multipart(const std::string &path) {
+		std::string body = _req->get_raw_request();
+		const std::string boundary = _req->get_raw_request().substr(
+				0, _req->get_raw_request().find("\r\n"));
+		while (body != "") {
+			body.erase(0, body.find("\r\n") + 2);
+			if (body == "" || body == "--")
+				break;
+			const std::string content_disposition = body.substr(0, body.find("\r\n"));
+			body.erase(0, body.find("\r\n") + 2);
+
+			const std::string content_type = body.substr(0, body.find("\r\n"));
+			body.erase(0, body.find("\r\n") + 2 + 2);
+
+			const std::size_t filename_pos = content_disposition.find("filename=\"");
+			const std::string filename = content_disposition.substr(
+				filename_pos + 10,
+				content_disposition.find("\"", filename_pos + 10) - filename_pos - 10);
+
+			const std::string file_path = path + filename;
+			if (!_create_file(file_path, body.substr(0, body.find("\r\n"))))
+				return true;
+			body.erase(0, body.find("\r\n") + 2);
+		}
+		return true;
+	}
+
+	bool		_create_file(const std::string &path, const std::string &content) {
+		int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0666);
+		if (fd == -1) {
+			set_status(500);
+			return false;
+		}
+		write(fd, content.c_str(), content.size());
+		close(fd);
+		usleep(100);
+		return true;
+	}
+
 	void	invoke() {
 		const Models::IBlock *block = _master->get_block_using_vhosts(
 			_req->get_host(), _req->get_uri());
 
 		if (_req->get_method() == METH_GET)
 			GET(block);
-		// else if (_req->get_method() == METH_POST)
+		else if (_req->get_method() == METH_POST)
+			POST(block);
 		else if (_req->get_method() == METH_DELETE)
 			DELETE(block);
 		else

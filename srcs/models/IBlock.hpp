@@ -85,6 +85,7 @@ class IBlock {
 
 	// Body Limit
 	void set_body_limit(size_t limit) { _body_limit = limit; }
+	const size_t &get_body_limit() const { return _body_limit; }
 
 	// Allowed Methods
 	void set_method(HTTP::METHODS method, bool value) {

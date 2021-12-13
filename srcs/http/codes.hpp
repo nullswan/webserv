@@ -83,7 +83,7 @@ void init_status_map() {
 	CODES[GONE] = "Gone";
 	CODES[LENGTH_REQUIRED] = "Length Required";
 	CODES[PRECONDITION_FAILED] = "Precondition Failed";
-	CODES[REQUEST_ENTITY_TOO_LARGE] = "Request Entity Too Large";
+	CODES[PAYLOAD_TOO_LARGE] = "Payload Too Large";
 	CODES[REQUEST_URI_TOO_LONG] = "Request URI Too Long";
 	CODES[UNSUPPORTED_MEDIA_TYPE] = "Unsupported Media Type";
 	CODES[REQUESTED_RANGE_NOT_SATISFIABLE] = "Requested Range Not Satisfiable";

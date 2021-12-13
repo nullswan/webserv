@@ -12,31 +12,6 @@
 namespace Webserv {
 namespace HTTP {
 
-static const std::string stringify_method(const METHODS &method) {
-  switch (method) {
-	case METH_GET:
-		return "GET";
-	case METH_POST:
-		return "POST";
-	case METH_HEAD:
-		return "HEAD";
-	case METH_PUT:
-		return "PUT";
-	case METH_DELETE:
-		return "DELETE";
-	case METH_CONNECT:
-		return "CONNECT";
-	case METH_OPTIONS:
-		return "OPTIONS";
-	case METH_TRACE:
-		return "TRACE";
-	case METH_PATCH:
-		return "PATCH";
-	default:
-		return "UNKNOWN";
-  }
-}
-
 static METHODS enumerate_method(const std::string &method) {
 	if (method == "GET")
 		return METH_GET;
