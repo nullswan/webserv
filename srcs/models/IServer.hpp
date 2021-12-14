@@ -136,7 +136,6 @@ class IServer : public Webserv::Models::IBlock {
 			_name, _port,
 			key,
 			_root,
-			_upload_pass,
 			_body_limit,
 			_error_pages);
 

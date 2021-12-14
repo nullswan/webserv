@@ -22,7 +22,7 @@ School 42 Project - Build HTTP/1.1 resilient server.
 
 **Core:** C++ / C
 
-**Tests:** Go / Python
+**Tests:** Python
 
 
 ## Features

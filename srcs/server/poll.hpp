@@ -64,8 +64,10 @@ class Poll {
 			throw std::runtime_error("Error while initializing epoll.");
 		if (!_add_servers(servers))
 			throw std::runtime_error("Error while adding servers to epoll.");
+		#ifndef WEBSERV_TESTS
 		if (!_add_stdin())
 			throw std::runtime_error("Error while adding stdin to epoll.");
+		#endif
 	}
 
 	int	run() {
@@ -222,7 +224,7 @@ class Poll {
 	void	_handle_stdin() {
 		std::string line;
 
-		#ifndef WEBSERV_BENCHMARK
+		#ifndef WEBSERV_TESTS
 			if (!std::getline(std::cin, line) || line == "quit" || line == "exit") {
 				_alive = false;
 				std::cout << "[📪] shutting down..." << std::endl;

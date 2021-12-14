@@ -110,20 +110,19 @@ class Parser {
 		}
 	}
 
-	bool	_default_configuration() {
+	void	_default_configuration() {
 		no_config_file_error();
-		_conf_file = DEFAULT_CONF_FILE;
+		_conf_file_path = "./tests/configs/default.conf";
 		std::cout << "[📄] using default configuration file" << std::endl;
-		return true;
 	}
 
 	bool	_verify_arguments(int ac, char **av) {
 		if (ac >= 3)
 			return usage_error(av[0]);
 		if (ac == 1)
-			return _default_configuration();
-
-		_conf_file_path = av[1];
+			_default_configuration();
+		else
+			_conf_file_path = av[1];
 		if (_conf_file_path.substr(
 			_conf_file_path.size() - 5, _conf_file_path.size()) != ".conf")
 			return config_file_extension_error(av[1]);
@@ -233,7 +232,7 @@ class Parser {
 		_skip_whitespaces(bucket);
 
 		char	last_chr = (*bucket)[bucket->size() - 1];
-		if (last_chr != ';' && (inside_location_block && last_chr != '{')) {
+		if (last_chr != ';' && !(inside_location_block && last_chr == '{')) {
 			invalid_delimiter_error(*bucket);
 			throw std::runtime_error("invalid delimiter");
 		}
@@ -305,17 +304,19 @@ class Parser {
 				}
 				case CONF_BLOCK_ERROR_PAGE: {
 					_extract_value("error_page", &line, false);
-					if (line.size() < 6
-						|| !_is_digits(line.substr(0, 3))
+
+					if (line.size() < 6 || !_is_digits(line.substr(0, 3))
 						|| line.find(" ") == std::string::npos
 						|| line.substr(0, line.find(" ")).size() != 3)
-						return invalid_value_error(line, line_nbr);
+							return invalid_value_error(line, line_nbr);
+
 					int error_code = atoi(line.substr(0, line.find(" ")).c_str());
 					std::string page_path = line.substr(line.find(" ") + 1, line.size());
 					std::string source;
 					if (!_dump_file(page_path, &source))
 						return invalid_value_error(page_path, line_nbr);
 					current_block->set_error_page(error_code, source);
+					break;
 				}
 				case CONF_BLOCK_INDEX: {
 					_extract_value("index", &line, false);
@@ -330,7 +331,7 @@ class Parser {
 						if (it->size() > 0)
 							current_block->add_index(*it);
 					}
-					continue;
+					break;
 				}
 				case CONF_SERVER_LOCATION: {
 					if (scope == 2)
@@ -346,7 +347,7 @@ class Parser {
 					if (!block)
 						return invalid_value_error(line, line_nbr);
 					current_block = block;
-					continue;
+					break;
 				}
 				case CONF_SERVER_LISTEN: {
 					_extract_value("listen", &line, false);
