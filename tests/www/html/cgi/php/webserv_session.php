@@ -27,6 +27,7 @@ if (isset($_GET['WEBSERV_USER'])) {
 <form action="webserv_session.php" method="get">
 	<input type="text" name="WEBSERV_USER">
 	<input type="submit">
-
+<hr />
+<a href=".">Goto Index</a>
 </body>
 </html>
