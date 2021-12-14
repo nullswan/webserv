@@ -221,14 +221,21 @@ class TestDefault(unittest.TestCase):
 		]
 
 		response = requests.request("POST", url, files=files)
+		file.close()
 		self.assertEqual(response.status_code, 204)
 		self.assertEqual(len(response.text), 0)
 
+
+		file = open(u.get_git_root() + '/tests/files/' + fpath,'rb')
+		files = [
+			('file_10ko', 
+				(fpath, file, 'application/octet-stream')
+			)
+		]
 		response = requests.request("POST", url, files=files)
+		file.close()
 		self.assertEqual(response.status_code, 409)
 		self.assertIn("Conflict", response.text)
-
-		file.close()
 
 		response = requests.get(url + fpath)
 		self.assertEqual(response.status_code, 200)
@@ -237,8 +244,50 @@ class TestDefault(unittest.TestCase):
 		self.assertEqual(response.status_code, 204)
 		self.assertEqual(len(response.text), 0)
 
-	# def test_multiple_file_upload_multipart(self):
+	def test_multiple_file_upload_multipart(self):
+		url = "http://localhost:8000/uploads/"
 
+		f1 = open(u.get_git_root() + '/tests/files/10ko.file','rb')
+		f2 = open(u.get_git_root() + '/tests/files/10ko.file','rb')
+		f3 = open(u.get_git_root() + '/tests/files/10ko.file','rb')
+		
+		files=[
+		('file1',('file1', f1, 'application/octet-stream')),
+		('file2',('file2', f2, 'application/octet-stream')),
+		('file3',('file3', f3, 'application/octet-stream'))
+		]
+
+		response = requests.request("POST", url, files=files)
+
+		f1.close()
+		f2.close()
+		f3.close()
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
+
+		response = requests.get(url + "file1")
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.text), 10000)
+
+		response = requests.get(url + "file2")
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.text), 10000)
+		
+		response = requests.get(url + "file3")
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(len(response.text), 10000)
+
+		response = requests.delete(url + "file1")
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
+
+		response = requests.delete(url + "file2")
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
+
+		response = requests.delete(url + "file3")
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(len(response.text), 0)
 
 if __name__ == '__main__':
 	unittest.main()
