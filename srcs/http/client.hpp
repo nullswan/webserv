@@ -114,7 +114,8 @@ class Client {
 		#ifdef WEBSERV_SESSION
 		_save_session();
 		#endif
-		send(_fd, resp->toString(), resp->size(), 0);
+		if (send(_fd, resp->toString(), resp->size(), 0) == -1)
+			return true;
 		return _close();
 	}
 
