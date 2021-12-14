@@ -122,10 +122,10 @@ class Response {
 			return true;
 		}
 		if (!cgi.run()) {
-			// if (cgi.get_timeout())
-			// 	set_status(HTTP::GATEWAY_TIMEOUT);
-			// else
-			set_status(HTTP::INTERNAL_SERVER_ERROR);
+			if (cgi.timed_out())
+				set_status(HTTP::GATEWAY_TIMEOUT);
+			else
+				set_status(HTTP::INTERNAL_SERVER_ERROR);
 			return true;
 		}
 		_body = cgi.get_output();

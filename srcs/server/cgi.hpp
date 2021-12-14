@@ -36,6 +36,7 @@ class CGI {
 
 	int		_fds[2];
 	int		_out_fd;
+	bool	_timed_out;
 
  public:
 	CGI(const std::string &bin_path,
@@ -44,7 +45,8 @@ class CGI {
 	:	_bin_path(bin_path),
 		_file_path(file_path),
 		_out_file(HTTP::rand_string(16)),
-		_method(method) {
+		_method(method),
+		_timed_out(false) {
 		_env["QUERY_STRING"] = query;
 	}
 
@@ -88,40 +90,54 @@ class CGI {
 		return true;
 	}
 
-	int	run() {
-		bool	timeout = false;
-		pid_t 	worker_pid = fork();
+	bool		run() {
+		pid_t	worker;
 
-		if (worker_pid == 0)
+		worker = fork();
+		if (worker < 0) {
+			std::cerr << "fork() failed" << std::endl;
+			close(_out_fd);
+			return false;
+		} else if (worker == 0) {
 			__worker_flow();
+		} else {
+			int pid, state;
+			struct timeval current_time;
+			struct timeval start_time;
 
-		pid_t timeout_pid = fork();
-		if (timeout_pid == 0)
-			__timer_flow();
+			gettimeofday(&start_time, NULL);
+			while (true) {
+				pid = waitpid(worker, &state, WNOHANG);
+				if (pid == -1) {
+					if (_timed_out)
+						break;
+					std::cerr << "waitpid() failed" << std::endl;
+					close(_out_fd);
+					return false;
+				}
 
-		while (true) {
-			pid_t exited_pid = wait(NULL);
-			if (exited_pid == worker_pid) {
-				kill(timeout_pid, SIGKILL);
-				break;
-			} else if (exited_pid == timeout_pid) {
-				kill(worker_pid, SIGKILL);
-				waitpid(worker_pid, 0, 0);
-				close(_out_fd);
+				usleep(WEBSERV_CGI_TICKS_MS);
+				if (pid && WIFEXITED(state))
+					break;
+
+				gettimeofday(&current_time, NULL);
+				if (current_time.tv_sec >= start_time.tv_sec + WEBSERV_CGI_TIMEOUT) {
+					if (current_time.tv_usec < start_time.tv_usec)
+						continue;
+					kill(worker, SIGKILL);
+					_timed_out = true;
+				}
 			}
 		}
-		if (timeout)
-			waitpid(worker_pid, 0, 0);
-		else
-			waitpid(timeout_pid, 0, 0);
 		close(_out_fd);
-		if (timeout)
-			return 2;
+		if (_timed_out)
+			return false;
 		return _extract_response();
 	}
 
 	const std::string &get_output() const { return _body; }
 	const Headers &get_headers() const { return _headers; }
+	const bool &timed_out() const { return _timed_out; }
 
  private:
 	void	__worker_flow() {
@@ -134,7 +150,7 @@ class CGI {
 			const_cast<char*>(_file_path.c_str()),
 		NULL};
 		if (execve(argv[0], argv, _dump_env()) == -1)
-			exit(EXIT_FAILURE);
+			_exit(EXIT_FAILURE);
 	}
 
 	void	__timer_flow() {
