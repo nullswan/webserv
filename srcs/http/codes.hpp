@@ -12,6 +12,7 @@ namespace Webserv {
 namespace HTTP {
 
 static std::map<int, std::string> CODES;
+static std::map<std::string, std::string> MIME_TYPES;
 
 const std::string	resolve_code(const int &status_code) {
 	std::map<int, std::string>::iterator it = CODES.find(status_code);
@@ -46,7 +47,90 @@ const std::string	generate_status_page(const int &status_code) {
 		"</html>";
 }
 
-void init_status_map() {
+void	init_mime_types_map() {
+	// reference: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+	MIME_TYPES["aac"] = "audio/aac";
+	MIME_TYPES[".abw"] = "application/x-abiword";
+	MIME_TYPES[".arc"] = "application/x-freearc";
+	MIME_TYPES[".avi"] = "video/x-msvideo";
+	MIME_TYPES[".azw"] = "application/vnd.amazon.ebook";
+	MIME_TYPES[".bin"] = "application/octet-stream";
+	MIME_TYPES[".bmp"] = "image/bmp";
+	MIME_TYPES[".bz"] = "application/x-bzip";
+	MIME_TYPES[".bz2"] = "application/x-bzip2";
+	MIME_TYPES[".cda"] = "application/x-cdf";
+	MIME_TYPES[".csh"] = "application/x-csh";
+	MIME_TYPES[".css"] = "text/css";
+	MIME_TYPES[".csv"] = "text/csv";
+	MIME_TYPES[".doc"] = "application/msword";
+	MIME_TYPES[".docx"] =
+		"application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+	MIME_TYPES[".eot"] = "application/vnd.ms-fontobject";
+	MIME_TYPES[".epub"] = "application/epub+zip";
+	MIME_TYPES[".gz"] = "application/gzip";
+	MIME_TYPES[".gif"] = "image/gif";
+	MIME_TYPES[".htm"] = "text/html";
+	MIME_TYPES[".html"] = "text/html";
+	MIME_TYPES[".ico"] = "image/vnd.microsoft.icon";
+	MIME_TYPES[".ics"] = "text/calendar";
+	MIME_TYPES[".jar"] = "application/java-archive";
+	MIME_TYPES[".jpeg"] = "image/jpeg";
+	MIME_TYPES[".jpg"] = "image/jpeg";
+	MIME_TYPES[".js"] = "text/javascript";
+	MIME_TYPES[".json"] = "application/json";
+	MIME_TYPES[".jsonld"] = "application/ld+json";
+	MIME_TYPES[".mid"] = "audio/midi";
+	MIME_TYPES[".midi"] = "audio/x-midi";
+	MIME_TYPES[".mjs"] = "text/javascript";
+	MIME_TYPES[".mp3"] = "audio/mpeg";
+	MIME_TYPES[".mp4"] = "video/mp4";
+	MIME_TYPES[".mpeg"] = "video/mpeg";
+	MIME_TYPES[".mpkg"] = "application/vnd.apple.installer+xml";
+	MIME_TYPES[".odp"] = "application/vnd.oasis.opendocument.presentation";
+	MIME_TYPES[".ods"] = "application/vnd.oasis.opendocument.spreadsheet";
+	MIME_TYPES[".odt"] = "application/vnd.oasis.opendocument.text";
+	MIME_TYPES[".oga"] = "audio/ogg";
+	MIME_TYPES[".ogv"] = "video/ogg";
+	MIME_TYPES[".ogx"] = "application/ogg";
+	MIME_TYPES[".opus"] = "audio/opus";
+	MIME_TYPES[".otf"] = "font/otf";
+	MIME_TYPES[".png"] = "image/png";
+	MIME_TYPES[".pdf"] = "application/pdf";
+	MIME_TYPES[".php"] = "application/x-httpd-php";
+	MIME_TYPES[".ppt"] = "application/vnd.ms-powerpoint";
+	MIME_TYPES[".pptx"] =
+		"application/vnd.openxmlformats-officedocument.presentationml.presentation";
+	MIME_TYPES[".rar"] = "application/x-rar-compressed";
+	MIME_TYPES[".rtf"] = "application/rtf";
+	MIME_TYPES[".sh"] = "application/x-sh";
+	MIME_TYPES[".svg"] = "image/svg+xml";
+	MIME_TYPES[".swf"] = "application/x-shockwave-flash";
+	MIME_TYPES[".tar"] = "application/x-tar";
+	MIME_TYPES[".tif"] = "image/tiff";
+	MIME_TYPES[".tiff"] = "image/tiff";
+	MIME_TYPES[".ttf"] = "font/ttf";
+	MIME_TYPES[".ts"] = "video/mp2t";
+	MIME_TYPES[".txt"] = "text/plain";
+	MIME_TYPES[".vsd"] = "application/vnd.visio";
+	MIME_TYPES[".wav"] = "audio/wav";
+	MIME_TYPES[".weba"] = "audio/webm";
+	MIME_TYPES[".webm"] = "video/webm";
+	MIME_TYPES[".webp"] = "image/webp";
+	MIME_TYPES[".woff"] = "font/woff";
+	MIME_TYPES[".woff2"] = "font/woff2";
+	MIME_TYPES[".xhtml"] = "application/xhtml+xml";
+	MIME_TYPES[".xls"] = "application/vnd.ms-excel";
+	MIME_TYPES[".xlsx"] =
+		"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+	MIME_TYPES[".xml"] = "application/xml";
+	MIME_TYPES[".xul"] = "application/vnd.mozilla.xul+xml";
+	MIME_TYPES[".zip"] = "application/zip";
+	MIME_TYPES[".3gp"] = "video/3gpp";
+	MIME_TYPES[".3g2"] = "video/3gpp2";
+	MIME_TYPES[".7z"] = "application/x-7z-compressed";
+}
+
+void	init_status_map() {
 	CODES[CONTINUE] = "Continue";
 	CODES[SWITCHING_PROTOCOLS] = "Switching Protocols";
 	CODES[PROCESSING] = "Processing";

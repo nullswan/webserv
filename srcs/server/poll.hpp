@@ -47,6 +47,7 @@ class Poll {
 		std::cout << "[🔑] using session module" << std::endl;
 		#endif
 		HTTP::init_status_map();
+		HTTP::init_mime_types_map();
 	}
 
 	~Poll() {

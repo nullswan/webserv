@@ -340,6 +340,7 @@ class Response {
 			_headers["Connection"] = "closed";
 		else
 			_headers["Connection"] = "keep-alive";
+		// set file type using extension
 		_headers["Content-Type"] = "text/html; charset=utf-8";
 		_headers["Content-Length"] = _toString(_body.size());
 		_set_header_date();
