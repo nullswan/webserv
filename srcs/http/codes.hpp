@@ -21,6 +21,22 @@ const std::string	resolve_code(const int &status_code) {
 	return it->second;
 }
 
+const std::string get_mime_type(const std::string &uri) {
+	std::string ext;
+
+	if (uri[uri.size() - 1] == '/')
+		return MIME_TYPES[".html"];
+	if (uri.find(".") != std::string::npos) {
+		ext = uri.substr(uri.find("."));
+	}
+	if (ext != "") {
+		std::map<std::string, std::string>::const_iterator it = MIME_TYPES.find(ext);
+		if (it != MIME_TYPES.end())
+			return it->second;
+	}
+	return MIME_TYPES[".bin"];
+}
+
 const std::string	generate_status_page(const int &status_code) {
 	std::stringstream	ss;
 	ss << status_code;
