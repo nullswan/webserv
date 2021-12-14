@@ -116,7 +116,7 @@ class CGI {
 					return false;
 				}
 
-				usleep(WEBSERV_CGI_TICKS_MS);
+				usleep(WEBSERV_CGI_TICKS_US);
 				if (pid && WIFEXITED(state))
 					break;
 
