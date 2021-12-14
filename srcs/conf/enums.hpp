@@ -25,41 +25,6 @@ enum	E_CONF_TOKEN {
 	CONF_TOKEN_MAX
 };
 
-static const char DEFAULT_CONF_FILE[] = "server {\n"
-"	server_name	webserv;\n"
-"\n"
-"	index		index.html index.php;\n"
-"	root		tests/www/html;\n"
-"\n"
-"	location /ping {\n"
-"		index index.html;\n"
-"		allowed_methods GET;\n"
-"	}\n"
-"\n"
-"	location /google {\n"
-"		redirect 301 http://google.com;\n"
-"	}\n"
-"\n"
-"	location /html {\n"
-"		autoindex	on;\n"
-"		root tests/www;\n"
-"	}\n"
-"\n"
-"	location /cgi {\n"
-"		root		tests/www/html;\n"
-"		autoindex 	on;\n"
-"		cgi			.py /usr/bin/python3;\n"
-"		cgi			.php /usr/bin/php-cgi;\n"
-"	}\n"
-"\n"
-"	location /uploads {\n"
-"		root		tests/www/html;\n"
-"		autoindex 	on;\n"
-"		upload_pass	tests/www/html;\n"
-"	}\n"
-"\n"
-"}";
-
 }  // namespace Conf
 }  // namespace Webserv
 

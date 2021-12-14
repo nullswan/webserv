@@ -110,20 +110,19 @@ class Parser {
 		}
 	}
 
-	bool	_default_configuration() {
+	void	_default_configuration() {
 		no_config_file_error();
-		_conf_file = DEFAULT_CONF_FILE;
+		_conf_file_path = "./tests/configs/default.conf";
 		std::cout << "[📄] using default configuration file" << std::endl;
-		return true;
 	}
 
 	bool	_verify_arguments(int ac, char **av) {
 		if (ac >= 3)
 			return usage_error(av[0]);
 		if (ac == 1)
-			return _default_configuration();
-
-		_conf_file_path = av[1];
+			_default_configuration();
+		else
+			_conf_file_path = av[1];
 		if (_conf_file_path.substr(
 			_conf_file_path.size() - 5, _conf_file_path.size()) != ".conf")
 			return config_file_extension_error(av[1]);
