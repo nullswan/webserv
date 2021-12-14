@@ -17,5 +17,5 @@ jobs:
           sudo make install
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
-      - run: make MODE=benchmark TESTS=enable
+      - run: make MODE=benchmark TESTS=enable SESSION=disable
       - run: python3 tests/scripts/stress_test.py

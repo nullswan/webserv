@@ -117,8 +117,15 @@ class Response {
 		Server::CGI cgi = Server::CGI(cgi_path,
 			block->get_root() + _req->get_uri(), _req->get_query(),
 			_req->get_method());
-		if (!cgi.setup(_req->get_raw_request(), _req->get_headers()) || !cgi.run()) {
+		if (!cgi.setup(_req->get_raw_request(), _req->get_headers())) {
 			set_status(HTTP::INTERNAL_SERVER_ERROR);
+			return true;
+		}
+		if (!cgi.run()) {
+			if (cgi.timed_out())
+				set_status(HTTP::GATEWAY_TIMEOUT);
+			else
+				set_status(HTTP::INTERNAL_SERVER_ERROR);
 			return true;
 		}
 		_body = cgi.get_output();
@@ -302,17 +309,22 @@ class Response {
 	}
 
 	bool		_create_file(const std::string &path, const std::string &content) {
-		if(access(path.c_str(), F_OK) == 0) {
+		if (access(path.c_str(), F_OK) == 0) {
 			set_status(HTTP::CONFLICT);
 			return false;
 		}
-		int fd = open(path.c_str(), O_WRONLY | O_CREAT, 0666);
-		if (fd == -1) {
+
+		std::ofstream o(path.c_str());
+		if (!o) {
 			set_status(HTTP::INTERNAL_SERVER_ERROR);
 			return false;
 		}
-		write(fd, content.c_str(), content.size());
-		close(fd);
+  		o << content;
+		if (o.bad()) {
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
+			return false;
+		}
+		o.close();
 		set_status(HTTP::NO_CONTENT);
 		usleep(50);
 		return true;
@@ -340,13 +352,15 @@ class Response {
 			_headers["Connection"] = "closed";
 		else
 			_headers["Connection"] = "keep-alive";
-		
-		if (_status != HTTP::OK)
-			_headers["Content-Type"] = get_mime_type(".html");
-		else if (_req)
-			_headers["Content-Type"] = get_mime_type(_req->get_uri());
-		else
-			_headers["Content-Type"] = get_mime_type("/");
+
+		if (_headers["Content-Type"] == "") {
+			if (_status != HTTP::OK)
+				_headers["Content-Type"] = get_mime_type(".html");
+			else if (_req)
+				_headers["Content-Type"] = get_mime_type(_req->get_uri());
+			else
+				_headers["Content-Type"] = get_mime_type("/");
+		}
 		_headers["Content-Length"] = _toString(_body.size());
 		_set_header_date();
 		_headers["Server"] = WEBSERV_SERVER_VERSION;

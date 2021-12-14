@@ -56,6 +56,9 @@ class Client {
 		_fd(-1) ,
 		req(0), resp(0) {
 		_fd = accept(ev_fd, (struct sockaddr *)&_addr, &_addr_len);
+		if (_fd == -1) {
+			std::cerr << "accept() failed" << std::endl;
+		}
 		if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1) {
 			close(_fd);
 			_fd = -1;
@@ -80,6 +83,7 @@ class Client {
 		char buffer[WEBSERV_REQUEST_BUFFER_SIZE + 1] = {0};
 		ssize_t n = recv(_fd, buffer, WEBSERV_REQUEST_BUFFER_SIZE, 0);
 		if (n == -1) {
+			std::cerr << "recv() failed" << std::endl;
 			return READ_ERROR;
 		} else if (n == 0) {
 			return READ_EOF;
@@ -100,7 +104,9 @@ class Client {
 		resp = new Response(code);
 		resp->prepare(_master);
 
-		send(_fd, resp->toString(), resp->size(), 0);
+		if (send(_fd, resp->toString(), resp->size(), 0) == -1) {
+			std::cerr << "send() failed" << std::endl;
+		}
 	}
 
 	bool	send_response() {
@@ -114,8 +120,10 @@ class Client {
 		#ifdef WEBSERV_SESSION
 		_save_session();
 		#endif
-		if (send(_fd, resp->toString(), resp->size(), 0) == -1)
+		if (send(_fd, resp->toString(), resp->size(), 0) == -1) {
+			std::cerr << "send() failed" << std::endl;
 			return true;
+		}
 		return _close();
 	}
 

@@ -36,7 +36,7 @@ class CGI {
 
 	int		_fds[2];
 	int		_out_fd;
-	pid_t	_pid;
+	bool	_timed_out;
 
  public:
 	CGI(const std::string &bin_path,
@@ -45,7 +45,8 @@ class CGI {
 	:	_bin_path(bin_path),
 		_file_path(file_path),
 		_out_file(HTTP::rand_string(16)),
-		_method(method) {
+		_method(method),
+		_timed_out(false) {
 		_env["QUERY_STRING"] = query;
 	}
 
@@ -90,38 +91,72 @@ class CGI {
 	}
 
 	bool		run() {
-		pid_t	_wait;
+		pid_t	worker;
 
-		_pid = fork();
-		if (_pid < 0) {
-			return false;
-		} else if (_pid == 0) {
-			dup2(_fds[STDIN_FILENO], STDIN_FILENO);
-			dup2(_out_fd, STDOUT_FILENO);
-			close(_fds[STDIN_FILENO]);
-
-			char	*argv[] = {
-				const_cast<char*>(_bin_path.c_str()),
-				const_cast<char*>(_file_path.c_str()),
-			NULL};
-			if (execve(argv[0], argv, _dump_env()) == -1)
-				exit(EXIT_FAILURE);
-		} else {
-			waitpid(_pid, &_wait, 0);
+		worker = fork();
+		if (worker < 0) {
+			std::cerr << "fork() failed" << std::endl;
 			close(_out_fd);
-			return _extract_response();
+			return false;
+		} else if (worker == 0) {
+			__worker_flow();
+		} else {
+			int pid, state;
+			struct timeval current_time;
+			struct timeval start_time;
+
+			gettimeofday(&start_time, NULL);
+			while (true) {
+				pid = waitpid(worker, &state, WNOHANG);
+				if (pid == -1) {
+					if (_timed_out)
+						break;
+					std::cerr << "waitpid() failed" << std::endl;
+					close(_out_fd);
+					return false;
+				}
+
+				usleep(WEBSERV_CGI_TICKS_US);
+				if (pid && WIFEXITED(state))
+					break;
+
+				gettimeofday(&current_time, NULL);
+				if (current_time.tv_sec >= start_time.tv_sec + WEBSERV_CGI_TIMEOUT) {
+					if (current_time.tv_usec < start_time.tv_usec)
+						continue;
+					kill(worker, SIGKILL);
+					_timed_out = true;
+				}
+			}
 		}
-		return true;
+		close(_out_fd);
+		if (_timed_out)
+			return false;
+		return _extract_response();
 	}
 
-	const std::string &get_output() const {
-		return _body;
-	}
-	const Headers &get_headers() const {
-		return _headers;
-	}
+	const std::string &get_output() const { return _body; }
+	const Headers &get_headers() const { return _headers; }
+	const bool &timed_out() const { return _timed_out; }
 
  private:
+	void	__worker_flow() {
+		dup2(_fds[STDIN_FILENO], STDIN_FILENO);
+		dup2(_out_fd, STDOUT_FILENO);
+		close(_fds[STDIN_FILENO]);
+
+		char	*argv[] = {
+			const_cast<char*>(_bin_path.c_str()),
+			const_cast<char*>(_file_path.c_str()),
+		NULL};
+		if (execve(argv[0], argv, _dump_env()) == -1)
+			_exit(EXIT_FAILURE);
+	}
+
+	void	__timer_flow() {
+		sleep(WEBSERV_CGI_TIMEOUT);
+	}
+
 	void	_delete_temp_file() { remove(_out_file.c_str()); }
 
 	char	**_dump_env() {
