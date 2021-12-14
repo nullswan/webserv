@@ -248,9 +248,6 @@ class Response {
 		if (path == "")
 			return;
 
-		if (block->get_body_limit() < _req->get_raw_request().size())
-			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
-
 		if (_cgi_pass(block))
 			return;
 
@@ -325,6 +322,9 @@ class Response {
 		const Models::IBlock *block = _master->get_block_using_vhosts(
 			_req->get_host(), _req->get_uri());
 
+		if (block->get_body_limit() < _req->get_raw_request().size())
+			return (set_status(HTTP::PAYLOAD_TOO_LARGE));
+
 		if (_req->get_method() == METH_GET)
 			GET(block);
 		else if (_req->get_method() == METH_POST)
@@ -332,7 +332,7 @@ class Response {
 		else if (_req->get_method() == METH_DELETE)
 			DELETE(block);
 		else
-			set_status(501);
+			set_status(HTTP::METHOD_NOT_ALLOWED);
 	}
 
 	std::string _prepare_headers() {
@@ -340,7 +340,10 @@ class Response {
 			_headers["Connection"] = "closed";
 		else
 			_headers["Connection"] = "keep-alive";
-		if (_req)
+		
+		if (_status != HTTP::OK)
+			_headers["Content-Type"] = get_mime_type(".html");
+		else if (_req)
 			_headers["Content-Type"] = get_mime_type(_req->get_uri());
 		else
 			_headers["Content-Type"] = get_mime_type("/");
@@ -386,9 +389,9 @@ class Response {
 	std::string _get_file_content(const std::string &path) {
 		int fd = open(path.c_str(), O_RDONLY | O_NONBLOCK);
 		if (fd == -1) {
-			set_status(500);
+			set_status(HTTP::INTERNAL_SERVER_ERROR);
 			if (errno == EACCES)
-				set_status(403);
+				set_status(HTTP::FORBIDDEN);
 			return "";
 		}
 
