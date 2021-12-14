@@ -103,8 +103,9 @@ class Client {
 		resp = new Response(code);
 		resp->prepare(_master);
 
-		if (send(_fd, resp->toString(), resp->size(), 0) == -1)
-			return ;
+		if (send(_fd, resp->toString(), resp->size(), 0) == -1) {
+			std::cerr << "send() failed" << std::endl;
+		}
 	}
 
 	bool	send_response() {
