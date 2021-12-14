@@ -36,7 +36,6 @@ class CGI {
 
 	int		_fds[2];
 	int		_out_fd;
-	pid_t	_pid;
 
  public:
 	CGI(const std::string &bin_path,
@@ -89,39 +88,59 @@ class CGI {
 		return true;
 	}
 
-	bool		run() {
-		pid_t	_wait;
+	int	run() {
+		bool	timeout = false;
+		pid_t 	worker_pid = fork();
 
-		_pid = fork();
-		if (_pid < 0) {
-			return false;
-		} else if (_pid == 0) {
-			dup2(_fds[STDIN_FILENO], STDIN_FILENO);
-			dup2(_out_fd, STDOUT_FILENO);
-			close(_fds[STDIN_FILENO]);
+		if (worker_pid == 0)
+			__worker_flow();
 
-			char	*argv[] = {
-				const_cast<char*>(_bin_path.c_str()),
-				const_cast<char*>(_file_path.c_str()),
-			NULL};
-			if (execve(argv[0], argv, _dump_env()) == -1)
-				exit(EXIT_FAILURE);
-		} else {
-			waitpid(_pid, &_wait, 0);
-			close(_out_fd);
-			return _extract_response();
+		pid_t timeout_pid = fork();
+		if (timeout_pid == 0)
+			__timer_flow();
+
+		while (true) {
+			pid_t exited_pid = wait(NULL);
+			if (exited_pid == worker_pid) {
+				kill(timeout_pid, SIGKILL);
+				break;
+			} else if (exited_pid == timeout_pid) {
+				kill(worker_pid, SIGKILL);
+				waitpid(worker_pid, 0, 0);
+				close(_out_fd);
+			}
 		}
-		return true;
+		if (timeout)
+			waitpid(worker_pid, 0, 0);
+		else
+			waitpid(timeout_pid, 0, 0);
+		close(_out_fd);
+		if (timeout)
+			return 2;
+		return _extract_response();
 	}
 
-	const std::string &get_output() const {
-		return _body;
-	}
-	const Headers &get_headers() const {
-		return _headers;
-	}
+	const std::string &get_output() const { return _body; }
+	const Headers &get_headers() const { return _headers; }
 
  private:
+	void	__worker_flow() {
+		dup2(_fds[STDIN_FILENO], STDIN_FILENO);
+		dup2(_out_fd, STDOUT_FILENO);
+		close(_fds[STDIN_FILENO]);
+
+		char	*argv[] = {
+			const_cast<char*>(_bin_path.c_str()),
+			const_cast<char*>(_file_path.c_str()),
+		NULL};
+		if (execve(argv[0], argv, _dump_env()) == -1)
+			exit(EXIT_FAILURE);
+	}
+
+	void	__timer_flow() {
+		sleep(WEBSERV_CGI_TIMEOUT);
+	}
+
 	void	_delete_temp_file() { remove(_out_file.c_str()); }
 
 	char	**_dump_env() {

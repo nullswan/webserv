@@ -56,6 +56,9 @@ class Client {
 		_fd(-1) ,
 		req(0), resp(0) {
 		_fd = accept(ev_fd, (struct sockaddr *)&_addr, &_addr_len);
+		if (_fd == -1) {
+			std::cerr << "accept() failed" << std::endl;
+		}
 		if (fcntl(_fd, F_SETFL, O_NONBLOCK) == -1) {
 			close(_fd);
 			_fd = -1;
@@ -100,7 +103,8 @@ class Client {
 		resp = new Response(code);
 		resp->prepare(_master);
 
-		send(_fd, resp->toString(), resp->size(), 0);
+		if (send(_fd, resp->toString(), resp->size(), 0) == -1)
+			return ;
 	}
 
 	bool	send_response() {
