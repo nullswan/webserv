@@ -2,7 +2,8 @@
 # webserv
 
 School 42 Project - Build HTTP/1.1 resilient server.
-Score: 125/100
+
+** Score **: 125/100
 
 
 ## Authors
